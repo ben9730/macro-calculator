@@ -1,7 +1,8 @@
 {
   "name": "מחשבון חלבון וקלוריות",
   "short_name": "חלבון",
-  "start_url": "/",
+  "start_url": "/macro-calculator/",
+  "scope": "/macro-calculator/",
   "display": "standalone",
   "background_color": "#14100D",
   "theme_color": "#14100D",
