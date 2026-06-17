@@ -16,6 +16,18 @@
   </head>
 <body>
 <div id="root"></div>
+<div id="sw-update-bar" style="display:none;position:fixed;bottom:calc(72px + env(safe-area-inset-bottom));left:0;right:0;z-index:60;padding:0 12px;pointer-events:none;">
+  <div style="background:#1C2018;border:1px solid #3C5733;border-radius:14px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:'Heebo',sans-serif;direction:rtl;box-shadow:0 4px 24px rgba(0,0,0,.6);pointer-events:auto;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;line-height:1;">⬆️</span>
+      <div>
+        <div style="font-size:13.5px;font-weight:700;color:#A7E08A;">גרסה חדשה זמינה</div>
+        <div style="font-size:11px;color:#7E7367;margin-top:2px;">הקש עדכן להתקנה ולרענון</div>
+      </div>
+    </div>
+    <button id="sw-update-btn" style="background:#23351F;border:1px solid #3C5733;color:#A7E08A;font-family:'Heebo',sans-serif;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;cursor:pointer;white-space:nowrap;min-height:40px;">עדכן ↺</button>
+  </div>
+</div>
 <script>
 const {
   useState,
@@ -921,6 +933,29 @@ function MacroCalculator() {
 }
 ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(MacroCalculator, null));
 </script>
-<script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});</script>
+<script>
+if ('serviceWorker' in navigator) {
+  function showUpdateBar(sw) {
+    window.__swWaiting = sw;
+    document.getElementById('sw-update-bar').style.display = 'block';
+  }
+  document.getElementById('sw-update-btn').addEventListener('click', function() {
+    if (window.__swWaiting) window.__swWaiting.postMessage('SKIP_WAITING');
+  });
+  navigator.serviceWorker.register('./sw.js').then(function(reg) {
+    if (reg.waiting) showUpdateBar(reg.waiting);
+    reg.addEventListener('updatefound', function() {
+      var sw = reg.installing;
+      if (!sw) return;
+      sw.addEventListener('statechange', function() {
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBar(sw);
+      });
+    });
+  }).catch(function() {});
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    window.location.reload();
+  });
+}
+</script>
 </body>
 </html>
