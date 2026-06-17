@@ -184,11 +184,14 @@ function MacroCalculator() {
   const [errDetail, setErrDetail] = useState("");
   const [saveErr, setSaveErr] = useState("");
   const [today, setToday] = useState([]);
-  const [goal, setGoal] = useState("150");
+  const [goal, setGoal] = useState("70");
   const [saved, setSaved] = useState(SEED_FOODS);
   const [flash, setFlash] = useState(null);
   const [apiKey, setApiKey] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [editingFoodId, setEditingFoodId] = useState(null);
+  const [editingTodayItem, setEditingTodayItem] = useState(null);
+  const [editTodayFields, setEditTodayFields] = useState({});
   const [apiKeyInput, setApiKeyInput] = useState("");
   const fileRef = useRef(null);
   useEffect(() => {
@@ -341,17 +344,24 @@ function MacroCalculator() {
       setSaveErr("אין ערכים לשמור — מלא לפחות קלוריות או חלבון");
       return;
     }
-    const food = {
-      id: Date.now(),
-      name: productName.trim(),
-      per100: {
-        ...per100
-      },
-      serving: num(grams) || 100
-    };
-    const next = [food, ...saved];
-    setSaved(next);
-    persistSaved(next);
+    if (editingFoodId) {
+      const next = saved.map(f => f.id === editingFoodId ? {
+        ...f, name: productName.trim(), per100: {...per100}, serving: num(grams) || 100
+      } : f);
+      setSaved(next);
+      persistSaved(next);
+      setEditingFoodId(null);
+    } else {
+      const food = {
+        id: Date.now(),
+        name: productName.trim(),
+        per100: {...per100},
+        serving: num(grams) || 100
+      };
+      const next = [food, ...saved];
+      setSaved(next);
+      persistSaved(next);
+    }
     setTab("foods");
   }
   function quickAddSaved(food) {
@@ -369,6 +379,7 @@ function MacroCalculator() {
     setProductName(food.name);
     setGrams(String(food.serving));
     setNetWeight(null);
+    setEditingFoodId(food.id);
     setTab("add");
   }
   function deleteSaved(id) {
@@ -387,6 +398,35 @@ function MacroCalculator() {
         store.set("removed-seeds", JSON.stringify(removed));
       }
     }
+  }
+  function openEditTodayItem(item) {
+    setEditingTodayItem(item);
+    setEditTodayFields({
+      name: item.name,
+      grams: String(item.grams),
+      protein: String(item.protein),
+      calories: String(item.calories),
+      fat: String(item.fat),
+      carbs: String(item.carbs),
+      sodium: String(item.sodium)
+    });
+  }
+  function saveEditTodayItem() {
+    if (!editingTodayItem) return;
+    const updated = {
+      ...editingTodayItem,
+      name: editTodayFields.name || editingTodayItem.name,
+      grams: num(editTodayFields.grams),
+      protein: num(editTodayFields.protein),
+      calories: num(editTodayFields.calories),
+      fat: num(editTodayFields.fat),
+      carbs: num(editTodayFields.carbs),
+      sodium: num(editTodayFields.sodium)
+    };
+    const next = today.map(i => i.id === editingTodayItem.id ? updated : i);
+    setToday(next);
+    persistDay(next);
+    setEditingTodayItem(null);
   }
   function removeItem(id) {
     const next = today.filter(i => i.id !== id);
@@ -415,7 +455,7 @@ function MacroCalculator() {
     className: "macro-root"
   }, /*#__PURE__*/React.createElement("style", null, `
         @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&family=Rubik:wght@500;600;700;800&display=swap');
-        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}html,body{background:#14100D;margin:0;padding:0;}
         .macro-root{direction:rtl;font-family:'Heebo',sans-serif;background:#14100D;color:#F3EDE4;min-height:100vh;
           padding:18px 13px calc(96px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased;}
         .wrap{max-width:520px;margin:0 auto;}
@@ -537,6 +577,10 @@ function MacroCalculator() {
         .modal-save{flex:1;background:#F0B73E;color:#14100D;border:none;font-family:'Rubik';font-weight:700;font-size:15px;padding:13px;border-radius:11px;cursor:pointer;}
         .modal-cancel{flex:1;background:#211A16;border:1px solid #3A2E26;color:#A89A8C;font-family:'Rubik';font-weight:600;font-size:15px;padding:13px;border-radius:11px;cursor:pointer;}
         .modal-clear{width:100%;background:transparent;border:1px solid #4A2620;color:#E29089;font-family:'Heebo';font-size:13px;padding:9px;border-radius:10px;cursor:pointer;margin-top:8px;}
+        .edit-field{margin-bottom:10px;}
+        .edit-field label{font-size:12.5px;color:#CDBFB1;display:block;margin-bottom:4px;}
+        .edit-field input{width:100%;background:#191512;border:1px solid #3A2E26;color:#F3EDE4;font-family:'Heebo';font-size:15px;padding:10px 12px;border-radius:9px;outline:none;}
+        .edit-field input:focus{border-color:#F0B73E;}
       `), showSettings && /*#__PURE__*/React.createElement("div", {
     className: "overlay",
     onClick: () => setShowSettings(false)
@@ -571,7 +615,13 @@ function MacroCalculator() {
       setApiKeyInput("");
       setShowSettings(false);
     }
-  }, "\u05DE\u05D7\u05E7 \u05DE\u05E4\u05EA\u05D7"))), /*#__PURE__*/React.createElement("div", {
+  }, "\u05DE\u05D7\u05E7 \u05DE\u05E4\u05EA\u05D7"))), editingTodayItem && /*#__PURE__*/React.createElement("div", {
+    className: "overlay",
+    onClick: () => setEditingTodayItem(null)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h3", null, "\u05E2\u05E8\u05D5\u05DA \u05DE\u05E0\u05D4"), [{k:"name",lbl:"\u05E9\u05DD",mode:"text"},{k:"grams",lbl:"\u05D2\u05E8\u05DD",mode:"decimal"},{k:"protein",lbl:"\u05D7\u05DC\u05D1\u05D5\u05DF (\u05D2\u05F3)",mode:"decimal"},{k:"calories",lbl:"\u05E7\u05DC\u05D5\u05E8\u05D9\u05D5\u05EA",mode:"decimal"},{k:"fat",lbl:"\u05E9\u05D5\u05DE\u05DF (\u05D2\u05F3)",mode:"decimal"},{k:"carbs",lbl:"\u05E4\u05D7\u05DE\u05D9\u05DE\u05D5\u05EA (\u05D2\u05F3)",mode:"decimal"},{k:"sodium",lbl:"\u05E0\u05EA\u05E8\u05DF (\u05DE\"\u05D2)",mode:"decimal"}].map(({k,lbl,mode}) => /*#__PURE__*/React.createElement("div", {className:"edit-field",key:k}, /*#__PURE__*/React.createElement("label", null, lbl), /*#__PURE__*/React.createElement("input", {inputMode:mode,value:editTodayFields[k] !== undefined ? editTodayFields[k] : "",onChange:e => setEditTodayFields(p => ({...p,[k]:e.target.value}))}))), /*#__PURE__*/React.createElement("div", {className:"modal-actions",style:{marginTop:16}}, /*#__PURE__*/React.createElement("button", {className:"modal-cancel",onClick:() => setEditingTodayItem(null)}, "\u05D1\u05D9\u05D8\u05D5\u05DC"), /*#__PURE__*/React.createElement("button", {className:"modal-save",onClick:saveEditTodayItem}, "\u05E9\u05DE\u05D5\u05E8")))), /*#__PURE__*/React.createElement("div", {
     className: "wrap"
   }, /*#__PURE__*/React.createElement("div", {
     className: "header"
@@ -641,11 +691,16 @@ function MacroCalculator() {
     className: "nm"
   }, i.name), /*#__PURE__*/React.createElement("div", {
     className: "meta"
-  }, fmt(i.grams, 0), " \u05D2\u05F3 \xB7 ", /*#__PURE__*/React.createElement("b", null, fmt(i.protein, 1), " \u05D2\u05F3 \u05D7\u05DC\u05D1\u05D5\u05DF"), " \xB7 ", fmt(i.calories, 0), " \u05E7\u05DC\u05F3")), /*#__PURE__*/React.createElement("button", {
+  }, fmt(i.grams, 0), " \u05D2\u05F3 \xB7 ", /*#__PURE__*/React.createElement("b", null, fmt(i.protein, 1), " \u05D2\u05F3 \u05D7\u05DC\u05D1\u05D5\u05DF"), " \xB7 ", fmt(i.calories, 0), " \u05E7\u05DC\u05F3")), /*#__PURE__*/React.createElement("div", {style:{display:"flex",gap:"4px"}}, /*#__PURE__*/React.createElement("button", {
+    className: "x",
+    style:{fontSize:"18px",color:"#7E7367"},
+    onClick: () => openEditTodayItem(i),
+    "aria-label": "\u05E2\u05E8\u05D5\u05DA"
+  }, "\u270F"), /*#__PURE__*/React.createElement("button", {
     className: "x",
     onClick: () => removeItem(i.id),
     "aria-label": "\u05D4\u05E1\u05E8"
-  }, "\xD7"))), /*#__PURE__*/React.createElement("div", {
+  }, "\xD7")))), /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
       marginTop: 4
@@ -807,7 +862,7 @@ function MacroCalculator() {
   }, "\uFF0B \u05D4\u05D5\u05E1\u05E3 \u05DC\u05D9\u05D5\u05DD"), /*#__PURE__*/React.createElement("button", {
     className: "btn btn-save",
     onClick: saveFood
-  }, "\u2605 \u05E9\u05DE\u05D5\u05E8 \u05DB\u05DE\u05D0\u05DB\u05DC")), saveErr && /*#__PURE__*/React.createElement("div", {
+  }, editingFoodId ? "\u2713 \u05E2\u05D3\u05DB\u05DF \u05DE\u05D0\u05DB\u05DC" : "\u2605 \u05E9\u05DE\u05D5\u05E8 \u05DB\u05DE\u05D0\u05DB\u05DC")), saveErr && /*#__PURE__*/React.createElement("div", {
     className: "err"
   }, saveErr))), tab === "foods" && /*#__PURE__*/React.createElement("div", {
     className: "card"
@@ -837,7 +892,7 @@ function MacroCalculator() {
   }, "\uFF0B \u05DC\u05D9\u05D5\u05DD"), /*#__PURE__*/React.createElement("button", {
     className: "sf-btn sf-edit",
     onClick: () => loadSavedToEditor(f)
-  }, "\u05E2\u05E8\u05D5\u05DA \u05DB\u05DE\u05D5\u05EA"), /*#__PURE__*/React.createElement("button", {
+  }, "\u05E2\u05E8\u05D5\u05DA \u05E2\u05E8\u05DB\u05D9\u05DD"), /*#__PURE__*/React.createElement("button", {
     className: "sf-btn sf-del",
     onClick: () => deleteSaved(f.id),
     "aria-label": "\u05DE\u05D7\u05E7"
@@ -852,7 +907,7 @@ function MacroCalculator() {
     className: "badge"
   }, today.length)), /*#__PURE__*/React.createElement("button", {
     className: "tabbtn" + (tab === "add" ? " on" : ""),
-    onClick: () => setTab("add")
+    onClick: () => { setTab("add"); setEditingFoodId(null); }
   }, /*#__PURE__*/React.createElement("span", {
     className: "ic"
   }, "\uFF0B"), "\u05D4\u05D5\u05E1\u05E4\u05D4"), /*#__PURE__*/React.createElement("button", {
