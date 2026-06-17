@@ -13,91 +13,166 @@
   <title>מחשבון חלבון וקלוריות</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-</head>
+  </head>
 <body>
 <div id="root"></div>
-<script type="text/babel" data-presets='[["react",{"runtime":"classic"}]]'>
-const { useState, useEffect, useRef } = React;
-
+<script>
+const {
+  useState,
+  useEffect,
+  useRef
+} = React;
 const todayKey = (() => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 })();
-
-const FIELDS = [
-  { key: "calories",     label: "קלוריות",       unit: "",     dec: 0 },
-  { key: "protein",      label: "חלבון",          unit: "ג׳",   dec: 1 },
-  { key: "fat",          label: "שומן",           unit: "ג׳",   dec: 1 },
-  { key: "saturatedFat", label: "מתוכו רווי",     unit: "ג׳",   dec: 1 },
-  { key: "carbs",        label: "פחמימות",        unit: "ג׳",   dec: 1 },
-  { key: "sugar",        label: "מתוכו סוכר",     unit: "ג׳",   dec: 1 },
-  { key: "fiber",        label: "סיבים",          unit: "ג׳",   dec: 1 },
-  { key: "sodium",       label: "נתרן",           unit: 'מ"ג',  dec: 0 },
-  { key: "cholesterol",  label: "כולסטרול",       unit: 'מ"ג',  dec: 0 },
-];
-const EMPTY = FIELDS.reduce((a, f) => ({ ...a, [f.key]: "" }), {});
-
-const SEED_FOODS = [
-  {
-    id: "seed-cottage9", seed: true, name: "קוטג׳ 9%", serving: 100,
-    per100: { calories: "128", protein: "10.5", fat: "9", saturatedFat: "5.85", carbs: "1.2", sugar: "1.2", fiber: "", sodium: "350", cholesterol: "27" },
-  },
-];
-
-const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+const FIELDS = [{
+  key: "calories",
+  label: "קלוריות",
+  unit: "",
+  dec: 0
+}, {
+  key: "protein",
+  label: "חלבון",
+  unit: "ג׳",
+  dec: 1
+}, {
+  key: "fat",
+  label: "שומן",
+  unit: "ג׳",
+  dec: 1
+}, {
+  key: "saturatedFat",
+  label: "מתוכו רווי",
+  unit: "ג׳",
+  dec: 1
+}, {
+  key: "carbs",
+  label: "פחמימות",
+  unit: "ג׳",
+  dec: 1
+}, {
+  key: "sugar",
+  label: "מתוכו סוכר",
+  unit: "ג׳",
+  dec: 1
+}, {
+  key: "fiber",
+  label: "סיבים",
+  unit: "ג׳",
+  dec: 1
+}, {
+  key: "sodium",
+  label: "נתרן",
+  unit: 'מ"ג',
+  dec: 0
+}, {
+  key: "cholesterol",
+  label: "כולסטרול",
+  unit: 'מ"ג',
+  dec: 0
+}];
+const EMPTY = FIELDS.reduce((a, f) => ({
+  ...a,
+  [f.key]: ""
+}), {});
+const SEED_FOODS = [{
+  id: "seed-cottage9",
+  seed: true,
+  name: "קוטג׳ 9%",
+  serving: 100,
+  per100: {
+    calories: "128",
+    protein: "10.5",
+    fat: "9",
+    saturatedFat: "5.85",
+    carbs: "1.2",
+    sugar: "1.2",
+    fiber: "",
+    sodium: "350",
+    cholesterol: "27"
+  }
+}];
+const num = v => {
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
+};
 const fmt = (v, dec = 1) => {
   const n = Number(v);
   if (!Number.isFinite(n)) return "0";
   const r = Math.round(n * Math.pow(10, dec)) / Math.pow(10, dec);
-  return r.toLocaleString("en-US", { maximumFractionDigits: dec });
+  return r.toLocaleString("en-US", {
+    maximumFractionDigits: dec
+  });
 };
-
 const store = {
-  get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } },
-  set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+  get: k => {
+    try {
+      return localStorage.getItem(k);
+    } catch (e) {
+      return null;
+    }
+  },
+  set: (k, v) => {
+    try {
+      localStorage.setItem(k, v);
+    } catch (e) {}
+  }
 };
-
 async function preprocessImage(file) {
   try {
     const dataUrl = await new Promise((res, rej) => {
-      const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file);
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
     });
     const img = await new Promise((res, rej) => {
-      const im = new window.Image(); im.onload = () => res(im); im.onerror = rej; im.src = dataUrl;
+      const im = new window.Image();
+      im.onload = () => res(im);
+      im.onerror = rej;
+      im.src = dataUrl;
     });
     const maxDim = 1568;
     const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
     const w = Math.max(1, Math.round(img.width * scale));
     const h = Math.max(1, Math.round(img.height * scale));
     const c = document.createElement("canvas");
-    c.width = w; c.height = h;
+    c.width = w;
+    c.height = h;
     c.getContext("2d").drawImage(img, 0, 0, w, h);
     const out = c.toDataURL("image/jpeg", 0.85);
-    return { base64: out.split(",")[1], mediaType: "image/jpeg" };
+    return {
+      base64: out.split(",")[1],
+      mediaType: "image/jpeg"
+    };
   } catch (e) {
     const b64 = await new Promise((res, rej) => {
-      const r = new FileReader(); r.onload = () => res(r.result.split(",")[1]); r.onerror = rej; r.readAsDataURL(file);
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(",")[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
     });
     let mt = file.type || "image/jpeg";
     if (mt === "image/heic" || mt === "image/heif" || !mt) mt = "image/jpeg";
-    return { base64: b64, mediaType: mt };
+    return {
+      base64: b64,
+      mediaType: mt
+    };
   }
 }
-
 function parseJson(text) {
   let clean = (text || "").replace(/```json|```/g, "").trim();
-  const s = clean.indexOf("{"); const e = clean.lastIndexOf("}");
+  const s = clean.indexOf("{");
+  const e = clean.lastIndexOf("}");
   if (s !== -1 && e !== -1) clean = clean.slice(s, e + 1);
   return JSON.parse(clean);
 }
-
 const EXTRACT_PROMPT = `קראת תווית מזון ישראלית (בעברית). חלץ את הערכים התזונתיים מעמודת "ל-100 גרם".
 מיפוי: אנרגיה/קלוריות=calories, חלבונים=protein, סך השומנים=fat, חומצת שומן רוויות=saturatedFat, חומצת שומן טרנס=transFat, סך הפחמימות=carbs, סוכרים=sugar, סיבים תזונתיים=fiber, נתרן=sodium, כולסטרול=cholesterol.
 החזר אך ורק אובייקט JSON תקין, ללא markdown וללא טקסט נוסף, עם המפתחות: calories, protein, fat, saturatedFat, transFat, carbs, sugar, fiber, sodium, cholesterol, productName, netWeightGrams.
 כל ערכי המזון ל-100 גרם. sodium ו-cholesterol במ"ג, השאר בגרמים, calories בקק"ל.
 "פחות מ-0.5" => 0.5. ערך שלא נמצא => null. productName = שם המוצר. netWeightGrams = משקל נטו בגרמים אם מצוין, אחרת null.`;
-
 function MacroCalculator() {
   const [tab, setTab] = useState("today");
   const [per100, setPer100] = useState(EMPTY);
@@ -116,134 +191,229 @@ function MacroCalculator() {
   const [showSettings, setShowSettings] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState("");
   const fileRef = useRef(null);
-
   useEffect(() => {
-    const g = store.get("protein-goal"); if (g) setGoal(g);
-    const ak = store.get("anthropic-api-key"); if (ak) setApiKey(ak);
-    const d = store.get(`daylog:${todayKey}`); if (d) try { setToday(JSON.parse(d)); } catch (e) {}
+    const g = store.get("protein-goal");
+    if (g) setGoal(g);
+    const ak = store.get("anthropic-api-key");
+    if (ak) setApiKey(ak);
+    const d = store.get(`daylog:${todayKey}`);
+    if (d) try {
+      setToday(JSON.parse(d));
+    } catch (e) {}
     let stored = [];
-    const s = store.get("saved-foods"); if (s) try { stored = JSON.parse(s); } catch (e) {}
+    const s = store.get("saved-foods");
+    if (s) try {
+      stored = JSON.parse(s);
+    } catch (e) {}
     let removed = [];
-    const r = store.get("removed-seeds"); if (r) try { removed = JSON.parse(r); } catch (e) {}
-    const ids = new Set(stored.map((f) => f.id));
+    const r = store.get("removed-seeds");
+    if (r) try {
+      removed = JSON.parse(r);
+    } catch (e) {}
+    const ids = new Set(stored.map(f => f.id));
     const merged = [...stored];
-    SEED_FOODS.forEach((seed) => { if (!ids.has(seed.id) && !removed.includes(seed.id)) merged.push(seed); });
+    SEED_FOODS.forEach(seed => {
+      if (!ids.has(seed.id) && !removed.includes(seed.id)) merged.push(seed);
+    });
     setSaved(merged);
     store.set("saved-foods", JSON.stringify(merged));
   }, []);
-
-  const persistDay    = (items) => store.set(`daylog:${todayKey}`, JSON.stringify(items));
-  const persistSaved  = (list)  => store.set("saved-foods", JSON.stringify(list));
-  const setField      = (k, v)  => setPer100((p) => ({ ...p, [k]: v }));
-
+  const persistDay = items => store.set(`daylog:${todayKey}`, JSON.stringify(items));
+  const persistSaved = list => store.set("saved-foods", JSON.stringify(list));
+  const setField = (k, v) => setPer100(p => ({
+    ...p,
+    [k]: v
+  }));
   function saveApiKey() {
     const key = apiKeyInput.trim();
     store.set("anthropic-api-key", key);
     setApiKey(key);
     setShowSettings(false);
   }
-
   async function handleFile(e) {
     const file = e.target.files && e.target.files[0];
     if (fileRef.current) fileRef.current.value = "";
     if (!file) return;
-    setErr(""); setErrDetail(""); setLoading(true);
+    setErr("");
+    setErrDetail("");
+    setLoading(true);
     try {
-      const { base64, mediaType } = await preprocessImage(file);
+      const {
+        base64,
+        mediaType
+      } = await preprocessImage(file);
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
+          "anthropic-dangerous-direct-browser-access": "true"
         },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1000,
-          messages: [{ role: "user", content: [
-            { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-            { type: "text", text: EXTRACT_PROMPT },
-          ]}],
-        }),
+          messages: [{
+            role: "user",
+            content: [{
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mediaType,
+                data: base64
+              }
+            }, {
+              type: "text",
+              text: EXTRACT_PROMPT
+            }]
+          }]
+        })
       });
       const raw = await res.text();
-      let data = null; try { data = JSON.parse(raw); } catch (_) {}
+      let data = null;
+      try {
+        data = JSON.parse(raw);
+      } catch (_) {}
       if (!res.ok) {
-        const m = (data && data.error && data.error.message) || (raw ? raw.slice(0, 220) : "") || ("HTTP " + res.status);
+        const m = data && data.error && data.error.message || (raw ? raw.slice(0, 220) : "") || "HTTP " + res.status;
         throw new Error("שרת " + res.status + ": " + m);
       }
-      if (!data || !data.content) throw new Error((data && data.error && data.error.message) || "תגובה ריקה מהשרת");
-      const text = data.content.filter((b) => b.type === "text").map((b) => b.text).join("\n");
-      let parsed; try { parsed = parseJson(text); } catch (_) { throw new Error("התקבלה תשובה אך לא הצלחתי לפענח ממנה ערכים."); }
-      const next = { ...EMPTY };
-      FIELDS.forEach((f) => { if (parsed[f.key] !== null && parsed[f.key] !== undefined) next[f.key] = String(parsed[f.key]); });
+      if (!data || !data.content) throw new Error(data && data.error && data.error.message || "תגובה ריקה מהשרת");
+      const text = data.content.filter(b => b.type === "text").map(b => b.text).join("\n");
+      let parsed;
+      try {
+        parsed = parseJson(text);
+      } catch (_) {
+        throw new Error("התקבלה תשובה אך לא הצלחתי לפענח ממנה ערכים.");
+      }
+      const next = {
+        ...EMPTY
+      };
+      FIELDS.forEach(f => {
+        if (parsed[f.key] !== null && parsed[f.key] !== undefined) next[f.key] = String(parsed[f.key]);
+      });
       setPer100(next);
       if (parsed.productName) setProductName(parsed.productName);
-      if (parsed.netWeightGrams) { setNetWeight(num(parsed.netWeightGrams)); setGrams(String(num(parsed.netWeightGrams))); }
+      if (parsed.netWeightGrams) {
+        setNetWeight(num(parsed.netWeightGrams));
+        setGrams(String(num(parsed.netWeightGrams)));
+      }
     } catch (e2) {
       setErr("קריאת התווית נכשלה. אפשר להזין ידנית למטה.");
       setErrDetail(String(e2 && e2.message ? e2.message : e2));
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
-
-  const factor  = num(grams) / 100;
-  const result  = FIELDS.reduce((a, f) => ({ ...a, [f.key]: num(per100[f.key]) * factor }), {});
+  const factor = num(grams) / 100;
+  const result = FIELDS.reduce((a, f) => ({
+    ...a,
+    [f.key]: num(per100[f.key]) * factor
+  }), {});
   const hasData = num(grams) > 0 && (num(per100.calories) > 0 || num(per100.protein) > 0);
-
   function makeEntry(name, p100, g) {
     const fac = num(g) / 100;
-    return { id: Date.now() + Math.random(), name: name || "מנה ללא שם", grams: num(g),
-      calories: num(p100.calories) * fac, protein: num(p100.protein) * fac,
-      fat: num(p100.fat) * fac, carbs: num(p100.carbs) * fac, sodium: num(p100.sodium) * fac };
+    return {
+      id: Date.now() + Math.random(),
+      name: name || "מנה ללא שם",
+      grams: num(g),
+      calories: num(p100.calories) * fac,
+      protein: num(p100.protein) * fac,
+      fat: num(p100.fat) * fac,
+      carbs: num(p100.carbs) * fac,
+      sodium: num(p100.sodium) * fac
+    };
   }
-
   function addToToday() {
     if (!hasData) return;
     const next = [...today, makeEntry(productName, per100, grams)];
-    setToday(next); persistDay(next); setTab("today");
+    setToday(next);
+    persistDay(next);
+    setTab("today");
   }
-
   function saveFood() {
     setSaveErr("");
-    if (!productName.trim()) { setSaveErr("תן שם למאכל כדי לשמור אותו"); return; }
-    if (!(num(per100.calories) > 0 || num(per100.protein) > 0)) { setSaveErr("אין ערכים לשמור — מלא לפחות קלוריות או חלבון"); return; }
-    const food = { id: Date.now(), name: productName.trim(), per100: { ...per100 }, serving: num(grams) || 100 };
-    const next = [food, ...saved]; setSaved(next); persistSaved(next); setTab("foods");
+    if (!productName.trim()) {
+      setSaveErr("תן שם למאכל כדי לשמור אותו");
+      return;
+    }
+    if (!(num(per100.calories) > 0 || num(per100.protein) > 0)) {
+      setSaveErr("אין ערכים לשמור — מלא לפחות קלוריות או חלבון");
+      return;
+    }
+    const food = {
+      id: Date.now(),
+      name: productName.trim(),
+      per100: {
+        ...per100
+      },
+      serving: num(grams) || 100
+    };
+    const next = [food, ...saved];
+    setSaved(next);
+    persistSaved(next);
+    setTab("foods");
   }
-
   function quickAddSaved(food) {
     const next = [...today, makeEntry(food.name, food.per100, food.serving)];
-    setToday(next); persistDay(next);
-    setFlash(food.id); setTimeout(() => setFlash(null), 900);
+    setToday(next);
+    persistDay(next);
+    setFlash(food.id);
+    setTimeout(() => setFlash(null), 900);
   }
-
   function loadSavedToEditor(food) {
-    setPer100({ ...EMPTY, ...food.per100 }); setProductName(food.name);
-    setGrams(String(food.serving)); setNetWeight(null); setTab("add");
+    setPer100({
+      ...EMPTY,
+      ...food.per100
+    });
+    setProductName(food.name);
+    setGrams(String(food.serving));
+    setNetWeight(null);
+    setTab("add");
   }
-
   function deleteSaved(id) {
-    const food = saved.find((f) => f.id === id);
-    const next = saved.filter((f) => f.id !== id); setSaved(next); persistSaved(next);
+    const food = saved.find(f => f.id === id);
+    const next = saved.filter(f => f.id !== id);
+    setSaved(next);
+    persistSaved(next);
     if (food && food.seed) {
-      let removed = []; const r = store.get("removed-seeds"); if (r) try { removed = JSON.parse(r); } catch (e) {}
-      if (!removed.includes(id)) { removed.push(id); store.set("removed-seeds", JSON.stringify(removed)); }
+      let removed = [];
+      const r = store.get("removed-seeds");
+      if (r) try {
+        removed = JSON.parse(r);
+      } catch (e) {}
+      if (!removed.includes(id)) {
+        removed.push(id);
+        store.set("removed-seeds", JSON.stringify(removed));
+      }
     }
   }
-
-  function removeItem(id) { const next = today.filter((i) => i.id !== id); setToday(next); persistDay(next); }
-  function clearDay()     { setToday([]); persistDay([]); }
-
+  function removeItem(id) {
+    const next = today.filter(i => i.id !== id);
+    setToday(next);
+    persistDay(next);
+  }
+  function clearDay() {
+    setToday([]);
+    persistDay([]);
+  }
   const dayTotals = today.reduce((a, i) => ({
-    calories: a.calories + i.calories, protein: a.protein + i.protein,
-    fat: a.fat + i.fat, carbs: a.carbs + i.carbs, sodium: a.sodium + i.sodium,
-  }), { calories: 0, protein: 0, fat: 0, carbs: 0, sodium: 0 });
-  const goalPct = num(goal) > 0 ? Math.min(100, (dayTotals.protein / num(goal)) * 100) : 0;
-
-  return (
-    <div className="macro-root">
-      <style>{`
+    calories: a.calories + i.calories,
+    protein: a.protein + i.protein,
+    fat: a.fat + i.fat,
+    carbs: a.carbs + i.carbs,
+    sodium: a.sodium + i.sodium
+  }), {
+    calories: 0,
+    protein: 0,
+    fat: 0,
+    carbs: 0,
+    sodium: 0
+  });
+  const goalPct = num(goal) > 0 ? Math.min(100, dayTotals.protein / num(goal) * 100) : 0;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "macro-root"
+  }, /*#__PURE__*/React.createElement("style", null, `
         @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&family=Rubik:wght@500;600;700;800&display=swap');
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
         .macro-root{direction:rtl;font-family:'Heebo',sans-serif;background:#14100D;color:#F3EDE4;min-height:100vh;
@@ -367,233 +537,334 @@ function MacroCalculator() {
         .modal-save{flex:1;background:#F0B73E;color:#14100D;border:none;font-family:'Rubik';font-weight:700;font-size:15px;padding:13px;border-radius:11px;cursor:pointer;}
         .modal-cancel{flex:1;background:#211A16;border:1px solid #3A2E26;color:#A89A8C;font-family:'Rubik';font-weight:600;font-size:15px;padding:13px;border-radius:11px;cursor:pointer;}
         .modal-clear{width:100%;background:transparent;border:1px solid #4A2620;color:#E29089;font-family:'Heebo';font-size:13px;padding:9px;border-radius:10px;cursor:pointer;margin-top:8px;}
-      `}</style>
-
-      {/* Settings modal */}
-      {showSettings && (
-        <div className="overlay" onClick={() => setShowSettings(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3>⚙ הגדרות</h3>
-            <label className="modal-label">מפתח API של Anthropic</label>
-            <input
-              className="modal-input"
-              type="password"
-              placeholder="sk-ant-api03-..."
-              value={apiKeyInput}
-              onChange={e => setApiKeyInput(e.target.value)}
-            />
-            {apiKey && <div className="modal-key-status">✓ מפתח שמור — סריקת תוויות פעילה</div>}
-            <div className="modal-hint">
-              המפתח נשמר רק במכשיר שלך ומשמש רק לסריקת תוויות מזון.<br />
-              השג מפתח חינמי ב: <a>console.anthropic.com</a>
-            </div>
-            <div className="modal-actions">
-              <button className="modal-cancel" onClick={() => setShowSettings(false)}>ביטול</button>
-              <button className="modal-save" onClick={saveApiKey}>שמור</button>
-            </div>
-            {apiKey && (
-              <button className="modal-clear" onClick={() => { store.set("anthropic-api-key",""); setApiKey(""); setApiKeyInput(""); setShowSettings(false); }}>
-                מחק מפתח
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="wrap">
-        <div className="header">
-          <div className="brand">מחשבון <b>חלבון</b> וקלוריות</div>
-          <button className="settings-btn" onClick={() => { setApiKeyInput(apiKey); setShowSettings(true); }} title="הגדרות">⚙</button>
-        </div>
-        <div className="sub">צלם תווית · שמור מאכלים קבועים · עקוב אחרי החלבון היומי</div>
-
-        {/* ===== TODAY ===== */}
-        {tab === "today" && (
-          <>
-            <div className="totalbar">
-              <div className="tot-row">
-                <div className="tot-p">{fmt(dayTotals.protein, 1)}<small> ג׳ חלבון</small></div>
-                <div className="tot-c">{fmt(dayTotals.calories, 0)} <small>קל׳</small></div>
-              </div>
-              <div className="goalrow">
-                יעד חלבון:
-                <input inputMode="numeric" value={goal} onChange={(e) => { setGoal(e.target.value); store.set("protein-goal", e.target.value); }} />
-                ג׳ · {fmt(goalPct, 0)}%
-              </div>
-              <div className="bar"><div className="bar-fill" style={{ width: goalPct + "%" }}></div></div>
-            </div>
-
-            {saved.length > 0 && (
-              <div className="card">
-                <div className="eyebrow"><span className="dot"></span>הוספה מהירה</div>
-                <div className="qa-wrap">
-                  {saved.map((f) => (
-                    <div key={f.id} className={"qa" + (flash === f.id ? " flash" : "")} onClick={() => quickAddSaved(f)}>
-                      <div className="qn">{f.name}</div>
-                      <div className="qm">{fmt(f.serving, 0)} ג׳ · <b>{fmt(num(f.per100.protein) * f.serving / 100, 1)} ג׳ חלבון</b></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="card">
-              <div className="eyebrow"><span className="dot"></span>היום · {todayKey}</div>
-              {today.length === 0 ? (
-                <div className="empty">עוד לא הוספת מנות היום.<br />עבור ל"הוספה" כדי לצלם תווית, או הקש על מאכל שמור למעלה.</div>
-              ) : (
-                <>
-                  {today.map((i) => (
-                    <div className="item" key={i.id}>
-                      <div>
-                        <div className="nm">{i.name}</div>
-                        <div className="meta">{fmt(i.grams, 0)} ג׳ · <b>{fmt(i.protein, 1)} ג׳ חלבון</b> · {fmt(i.calories, 0)} קל׳</div>
-                      </div>
-                      <button className="x" onClick={() => removeItem(i.id)} aria-label="הסר">×</button>
-                    </div>
-                  ))}
-                  <div style={{ textAlign: "center", marginTop: 4 }}>
-                    <button className="clear" onClick={clearDay}>נקה את היום</button>
-                  </div>
-                </>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* ===== ADD ===== */}
-        {tab === "add" && (
-          <>
-            <div className="card">
-              <div className="eyebrow"><span className="dot"></span>מקור הנתונים</div>
-              {loading ? (
-                <div className="loading"><span className="spin"></span>קורא את התווית…</div>
-              ) : apiKey ? (
-                <>
-                  <button className="upload" onClick={() => fileRef.current && fileRef.current.click()}>📷 צלם או העלה תווית</button>
-                  <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
-                  <div className="hint">צלם מקרוב ובחדות את טבלת "ל-100 גרם", או מלא ידנית למטה</div>
-                </>
-              ) : (
-                <div className="no-key">
-                  כדי לצלם תוויות ולמלא ערכים אוטומטית, צריך מפתח API.<br />
-                  <button onClick={() => { setApiKeyInput(""); setShowSettings(true); }}>הוסף מפתח API ←</button>
-                </div>
-              )}
-              {err && (
-                <div className="err">
-                  {err}
-                  {errDetail && <div className="errd">פרטים: {errDetail}</div>}
-                </div>
-              )}
-            </div>
-
-            <div className="card">
-              <input className="pname" placeholder="שם המוצר (לדוגמה: קבב רומני)" value={productName} onChange={(e) => setProductName(e.target.value)} />
-              <div className="label-panel">
-                <div className="label-cap">סימון תזונתי ל-100 גרם</div>
-                <div className="grid2">
-                  {FIELDS.map((f) => (
-                    <div className="frow" key={f.key}>
-                      <label>{f.label}</label>
-                      <div className="inp">
-                        <input inputMode="decimal" value={per100[f.key]} placeholder="0" onChange={(e) => setField(f.key, e.target.value)} />
-                        <span className="u">{f.unit}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="eyebrow" style={{ marginTop: 17 }}><span className="dot"></span>כמה אתה אוכל</div>
-              <div className="qrow">
-                <button className={"chip" + (grams === "100" ? " on" : "")} onClick={() => setGrams("100")}>100 ג׳</button>
-                <button className={"chip" + (grams === "150" ? " on" : "")} onClick={() => setGrams("150")}>150 ג׳</button>
-                <button className={"chip" + (grams === "200" ? " on" : "")} onClick={() => setGrams("200")}>200 ג׳</button>
-                {netWeight && (
-                  <button className={"chip" + (grams === String(netWeight) ? " on" : "")} onClick={() => setGrams(String(netWeight))}>חבילה ({netWeight} ג׳)</button>
-                )}
-              </div>
-              <div className="gramwrap">
-                <input inputMode="decimal" placeholder="0" value={grams} onChange={(e) => setGrams(e.target.value)} />
-                <span>גרם</span>
-              </div>
-            </div>
-
-            {hasData && (
-              <div className="card">
-                <div className="eyebrow"><span className="dot"></span>הסה״כ ל-{fmt(grams, 0)} ג׳</div>
-                <div className="hero">
-                  <div className="hero-box hero-protein">
-                    <div className="hero-lbl">חלבון</div>
-                    <div className="hero-val">{fmt(result.protein, 1)}<small>ג׳</small></div>
-                  </div>
-                  <div className="hero-box hero-cal">
-                    <div className="hero-lbl">קלוריות</div>
-                    <div className="hero-val">{fmt(result.calories, 0)}</div>
-                  </div>
-                </div>
-                <div className="mini-grid">
-                  <div className="mini"><div className="v">{fmt(result.fat, 1)}</div><div className="l">שומן ג׳</div></div>
-                  <div className="mini"><div className="v">{fmt(result.carbs, 1)}</div><div className="l">פחמ׳ ג׳</div></div>
-                  <div className="mini"><div className="v">{fmt(result.fiber, 1)}</div><div className="l">סיבים ג׳</div></div>
-                  <div className="mini"><div className="v">{fmt(result.sugar, 1)}</div><div className="l">סוכר ג׳</div></div>
-                  <div className="mini"><div className="v">{fmt(result.sodium, 0)}</div><div className="l">נתרן מ״ג</div></div>
-                  <div className="mini"><div className="v">{fmt(result.cholesterol, 0)}</div><div className="l">כולס׳ מ״ג</div></div>
-                </div>
-                <div className="actions">
-                  <button className="btn btn-add" onClick={addToToday}>＋ הוסף ליום</button>
-                  <button className="btn btn-save" onClick={saveFood}>★ שמור כמאכל</button>
-                </div>
-                {saveErr && <div className="err">{saveErr}</div>}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ===== SAVED FOODS ===== */}
-        {tab === "foods" && (
-          <div className="card">
-            <div className="eyebrow"><span className="dot"></span>המאכלים שלי</div>
-            {saved.length === 0 ? (
-              <div className="empty">אין עדיין מאכלים שמורים.<br />ב"הוספה", אחרי שתזין ערכים, הקש על "★ שמור כמאכל" כדי שיופיע כאן לשימוש חוזר.</div>
-            ) : (
-              saved.map((f) => (
-                <div className="sf" key={f.id}>
-                  <div className="sf-top">
-                    <div>
-                      <div className="sf-nm">{f.name}</div>
-                      <div className="sf-meta">מנה: {fmt(f.serving, 0)} ג׳ · <b>{fmt(num(f.per100.protein) * f.serving / 100, 1)} ג׳ חלבון</b> · {fmt(num(f.per100.calories) * f.serving / 100, 0)} קל׳</div>
-                    </div>
-                  </div>
-                  <div className="sf-act">
-                    <button className="sf-btn sf-add" onClick={() => { quickAddSaved(f); setTab("today"); }}>＋ ליום</button>
-                    <button className="sf-btn sf-edit" onClick={() => loadSavedToEditor(f)}>ערוך כמות</button>
-                    <button className="sf-btn sf-del" onClick={() => deleteSaved(f.id)} aria-label="מחק">🗑</button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="tabbar">
-        <button className={"tabbtn" + (tab === "today" ? " on" : "")} onClick={() => setTab("today")}>
-          <span className="ic">📊</span>היום{today.length > 0 && <span className="badge">{today.length}</span>}
-        </button>
-        <button className={"tabbtn" + (tab === "add" ? " on" : "")} onClick={() => setTab("add")}>
-          <span className="ic">＋</span>הוספה
-        </button>
-        <button className={"tabbtn" + (tab === "foods" ? " on" : "")} onClick={() => setTab("foods")}>
-          <span className="ic">★</span>מאכלים{saved.length > 0 && <span className="badge">{saved.length}</span>}
-        </button>
-      </div>
-    </div>
-  );
+      `), showSettings && /*#__PURE__*/React.createElement("div", {
+    className: "overlay",
+    onClick: () => setShowSettings(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "modal",
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h3", null, "\u2699 \u05D4\u05D2\u05D3\u05E8\u05D5\u05EA"), /*#__PURE__*/React.createElement("label", {
+    className: "modal-label"
+  }, "\u05DE\u05E4\u05EA\u05D7 API \u05E9\u05DC Anthropic"), /*#__PURE__*/React.createElement("input", {
+    className: "modal-input",
+    type: "password",
+    placeholder: "sk-ant-api03-...",
+    value: apiKeyInput,
+    onChange: e => setApiKeyInput(e.target.value)
+  }), apiKey && /*#__PURE__*/React.createElement("div", {
+    className: "modal-key-status"
+  }, "\u2713 \u05DE\u05E4\u05EA\u05D7 \u05E9\u05DE\u05D5\u05E8 \u2014 \u05E1\u05E8\u05D9\u05E7\u05EA \u05EA\u05D5\u05D5\u05D9\u05D5\u05EA \u05E4\u05E2\u05D9\u05DC\u05D4"), /*#__PURE__*/React.createElement("div", {
+    className: "modal-hint"
+  }, "\u05D4\u05DE\u05E4\u05EA\u05D7 \u05E0\u05E9\u05DE\u05E8 \u05E8\u05E7 \u05D1\u05DE\u05DB\u05E9\u05D9\u05E8 \u05E9\u05DC\u05DA \u05D5\u05DE\u05E9\u05DE\u05E9 \u05E8\u05E7 \u05DC\u05E1\u05E8\u05D9\u05E7\u05EA \u05EA\u05D5\u05D5\u05D9\u05D5\u05EA \u05DE\u05D6\u05D5\u05DF.", /*#__PURE__*/React.createElement("br", null), "\u05D4\u05E9\u05D2 \u05DE\u05E4\u05EA\u05D7 \u05D7\u05D9\u05E0\u05DE\u05D9 \u05D1: ", /*#__PURE__*/React.createElement("a", null, "console.anthropic.com")), /*#__PURE__*/React.createElement("div", {
+    className: "modal-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "modal-cancel",
+    onClick: () => setShowSettings(false)
+  }, "\u05D1\u05D9\u05D8\u05D5\u05DC"), /*#__PURE__*/React.createElement("button", {
+    className: "modal-save",
+    onClick: saveApiKey
+  }, "\u05E9\u05DE\u05D5\u05E8")), apiKey && /*#__PURE__*/React.createElement("button", {
+    className: "modal-clear",
+    onClick: () => {
+      store.set("anthropic-api-key", "");
+      setApiKey("");
+      setApiKeyInput("");
+      setShowSettings(false);
+    }
+  }, "\u05DE\u05D7\u05E7 \u05DE\u05E4\u05EA\u05D7"))), /*#__PURE__*/React.createElement("div", {
+    className: "wrap"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "brand"
+  }, "\u05DE\u05D7\u05E9\u05D1\u05D5\u05DF ", /*#__PURE__*/React.createElement("b", null, "\u05D7\u05DC\u05D1\u05D5\u05DF"), " \u05D5\u05E7\u05DC\u05D5\u05E8\u05D9\u05D5\u05EA"), /*#__PURE__*/React.createElement("button", {
+    className: "settings-btn",
+    onClick: () => {
+      setApiKeyInput(apiKey);
+      setShowSettings(true);
+    },
+    title: "\u05D4\u05D2\u05D3\u05E8\u05D5\u05EA"
+  }, "\u2699")), /*#__PURE__*/React.createElement("div", {
+    className: "sub"
+  }, "\u05E6\u05DC\u05DD \u05EA\u05D5\u05D5\u05D9\u05EA \xB7 \u05E9\u05DE\u05D5\u05E8 \u05DE\u05D0\u05DB\u05DC\u05D9\u05DD \u05E7\u05D1\u05D5\u05E2\u05D9\u05DD \xB7 \u05E2\u05E7\u05D5\u05D1 \u05D0\u05D7\u05E8\u05D9 \u05D4\u05D7\u05DC\u05D1\u05D5\u05DF \u05D4\u05D9\u05D5\u05DE\u05D9"), tab === "today" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "totalbar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tot-row"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "tot-p"
+  }, fmt(dayTotals.protein, 1), /*#__PURE__*/React.createElement("small", null, " \u05D2\u05F3 \u05D7\u05DC\u05D1\u05D5\u05DF")), /*#__PURE__*/React.createElement("div", {
+    className: "tot-c"
+  }, fmt(dayTotals.calories, 0), " ", /*#__PURE__*/React.createElement("small", null, "\u05E7\u05DC\u05F3"))), /*#__PURE__*/React.createElement("div", {
+    className: "goalrow"
+  }, "\u05D9\u05E2\u05D3 \u05D7\u05DC\u05D1\u05D5\u05DF:", /*#__PURE__*/React.createElement("input", {
+    inputMode: "numeric",
+    value: goal,
+    onChange: e => {
+      setGoal(e.target.value);
+      store.set("protein-goal", e.target.value);
+    }
+  }), "\u05D2\u05F3 \xB7 ", fmt(goalPct, 0), "%"), /*#__PURE__*/React.createElement("div", {
+    className: "bar"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bar-fill",
+    style: {
+      width: goalPct + "%"
+    }
+  }))), saved.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "eyebrow"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "dot"
+  }), "\u05D4\u05D5\u05E1\u05E4\u05D4 \u05DE\u05D4\u05D9\u05E8\u05D4"), /*#__PURE__*/React.createElement("div", {
+    className: "qa-wrap"
+  }, saved.map(f => /*#__PURE__*/React.createElement("div", {
+    key: f.id,
+    className: "qa" + (flash === f.id ? " flash" : ""),
+    onClick: () => quickAddSaved(f)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "qn"
+  }, f.name), /*#__PURE__*/React.createElement("div", {
+    className: "qm"
+  }, fmt(f.serving, 0), " \u05D2\u05F3 \xB7 ", /*#__PURE__*/React.createElement("b", null, fmt(num(f.per100.protein) * f.serving / 100, 1), " \u05D2\u05F3 \u05D7\u05DC\u05D1\u05D5\u05DF")))))), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "eyebrow"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "dot"
+  }), "\u05D4\u05D9\u05D5\u05DD \xB7 ", todayKey), today.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "empty"
+  }, "\u05E2\u05D5\u05D3 \u05DC\u05D0 \u05D4\u05D5\u05E1\u05E4\u05EA \u05DE\u05E0\u05D5\u05EA \u05D4\u05D9\u05D5\u05DD.", /*#__PURE__*/React.createElement("br", null), "\u05E2\u05D1\u05D5\u05E8 \u05DC\"\u05D4\u05D5\u05E1\u05E4\u05D4\" \u05DB\u05D3\u05D9 \u05DC\u05E6\u05DC\u05DD \u05EA\u05D5\u05D5\u05D9\u05EA, \u05D0\u05D5 \u05D4\u05E7\u05E9 \u05E2\u05DC \u05DE\u05D0\u05DB\u05DC \u05E9\u05DE\u05D5\u05E8 \u05DC\u05DE\u05E2\u05DC\u05D4.") : /*#__PURE__*/React.createElement(React.Fragment, null, today.map(i => /*#__PURE__*/React.createElement("div", {
+    className: "item",
+    key: i.id
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "nm"
+  }, i.name), /*#__PURE__*/React.createElement("div", {
+    className: "meta"
+  }, fmt(i.grams, 0), " \u05D2\u05F3 \xB7 ", /*#__PURE__*/React.createElement("b", null, fmt(i.protein, 1), " \u05D2\u05F3 \u05D7\u05DC\u05D1\u05D5\u05DF"), " \xB7 ", fmt(i.calories, 0), " \u05E7\u05DC\u05F3")), /*#__PURE__*/React.createElement("button", {
+    className: "x",
+    onClick: () => removeItem(i.id),
+    "aria-label": "\u05D4\u05E1\u05E8"
+  }, "\xD7"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginTop: 4
+    }
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "clear",
+    onClick: clearDay
+  }, "\u05E0\u05E7\u05D4 \u05D0\u05EA \u05D4\u05D9\u05D5\u05DD"))))), tab === "add" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "eyebrow"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "dot"
+  }), "\u05DE\u05E7\u05D5\u05E8 \u05D4\u05E0\u05EA\u05D5\u05E0\u05D9\u05DD"), loading ? /*#__PURE__*/React.createElement("div", {
+    className: "loading"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "spin"
+  }), "\u05E7\u05D5\u05E8\u05D0 \u05D0\u05EA \u05D4\u05EA\u05D5\u05D5\u05D9\u05EA\u2026") : apiKey ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("button", {
+    className: "upload",
+    onClick: () => fileRef.current && fileRef.current.click()
+  }, "\uD83D\uDCF7 \u05E6\u05DC\u05DD \u05D0\u05D5 \u05D4\u05E2\u05DC\u05D4 \u05EA\u05D5\u05D5\u05D9\u05EA"), /*#__PURE__*/React.createElement("input", {
+    ref: fileRef,
+    type: "file",
+    accept: "image/*",
+    capture: "environment",
+    onChange: handleFile,
+    style: {
+      display: "none"
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "hint"
+  }, "\u05E6\u05DC\u05DD \u05DE\u05E7\u05E8\u05D5\u05D1 \u05D5\u05D1\u05D7\u05D3\u05D5\u05EA \u05D0\u05EA \u05D8\u05D1\u05DC\u05EA \"\u05DC-100 \u05D2\u05E8\u05DD\", \u05D0\u05D5 \u05DE\u05DC\u05D0 \u05D9\u05D3\u05E0\u05D9\u05EA \u05DC\u05DE\u05D8\u05D4")) : /*#__PURE__*/React.createElement("div", {
+    className: "no-key"
+  }, "\u05DB\u05D3\u05D9 \u05DC\u05E6\u05DC\u05DD \u05EA\u05D5\u05D5\u05D9\u05D5\u05EA \u05D5\u05DC\u05DE\u05DC\u05D0 \u05E2\u05E8\u05DB\u05D9\u05DD \u05D0\u05D5\u05D8\u05D5\u05DE\u05D8\u05D9\u05EA, \u05E6\u05E8\u05D9\u05DA \u05DE\u05E4\u05EA\u05D7 API.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      setApiKeyInput("");
+      setShowSettings(true);
+    }
+  }, "\u05D4\u05D5\u05E1\u05E3 \u05DE\u05E4\u05EA\u05D7 API \u2190")), err && /*#__PURE__*/React.createElement("div", {
+    className: "err"
+  }, err, errDetail && /*#__PURE__*/React.createElement("div", {
+    className: "errd"
+  }, "\u05E4\u05E8\u05D8\u05D9\u05DD: ", errDetail))), /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "pname",
+    placeholder: "\u05E9\u05DD \u05D4\u05DE\u05D5\u05E6\u05E8 (\u05DC\u05D3\u05D5\u05D2\u05DE\u05D4: \u05E7\u05D1\u05D1 \u05E8\u05D5\u05DE\u05E0\u05D9)",
+    value: productName,
+    onChange: e => setProductName(e.target.value)
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "label-panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "label-cap"
+  }, "\u05E1\u05D9\u05DE\u05D5\u05DF \u05EA\u05D6\u05D5\u05E0\u05EA\u05D9 \u05DC-100 \u05D2\u05E8\u05DD"), /*#__PURE__*/React.createElement("div", {
+    className: "grid2"
+  }, FIELDS.map(f => /*#__PURE__*/React.createElement("div", {
+    className: "frow",
+    key: f.key
+  }, /*#__PURE__*/React.createElement("label", null, f.label), /*#__PURE__*/React.createElement("div", {
+    className: "inp"
+  }, /*#__PURE__*/React.createElement("input", {
+    inputMode: "decimal",
+    value: per100[f.key],
+    placeholder: "0",
+    onChange: e => setField(f.key, e.target.value)
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "u"
+  }, f.unit)))))), /*#__PURE__*/React.createElement("div", {
+    className: "eyebrow",
+    style: {
+      marginTop: 17
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "dot"
+  }), "\u05DB\u05DE\u05D4 \u05D0\u05EA\u05D4 \u05D0\u05D5\u05DB\u05DC"), /*#__PURE__*/React.createElement("div", {
+    className: "qrow"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "chip" + (grams === "100" ? " on" : ""),
+    onClick: () => setGrams("100")
+  }, "100 \u05D2\u05F3"), /*#__PURE__*/React.createElement("button", {
+    className: "chip" + (grams === "150" ? " on" : ""),
+    onClick: () => setGrams("150")
+  }, "150 \u05D2\u05F3"), /*#__PURE__*/React.createElement("button", {
+    className: "chip" + (grams === "200" ? " on" : ""),
+    onClick: () => setGrams("200")
+  }, "200 \u05D2\u05F3"), netWeight && /*#__PURE__*/React.createElement("button", {
+    className: "chip" + (grams === String(netWeight) ? " on" : ""),
+    onClick: () => setGrams(String(netWeight))
+  }, "\u05D7\u05D1\u05D9\u05DC\u05D4 (", netWeight, " \u05D2\u05F3)")), /*#__PURE__*/React.createElement("div", {
+    className: "gramwrap"
+  }, /*#__PURE__*/React.createElement("input", {
+    inputMode: "decimal",
+    placeholder: "0",
+    value: grams,
+    onChange: e => setGrams(e.target.value)
+  }), /*#__PURE__*/React.createElement("span", null, "\u05D2\u05E8\u05DD"))), hasData && /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "eyebrow"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "dot"
+  }), "\u05D4\u05E1\u05D4\u05F4\u05DB \u05DC-", fmt(grams, 0), " \u05D2\u05F3"), /*#__PURE__*/React.createElement("div", {
+    className: "hero"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "hero-box hero-protein"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "hero-lbl"
+  }, "\u05D7\u05DC\u05D1\u05D5\u05DF"), /*#__PURE__*/React.createElement("div", {
+    className: "hero-val"
+  }, fmt(result.protein, 1), /*#__PURE__*/React.createElement("small", null, "\u05D2\u05F3"))), /*#__PURE__*/React.createElement("div", {
+    className: "hero-box hero-cal"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "hero-lbl"
+  }, "\u05E7\u05DC\u05D5\u05E8\u05D9\u05D5\u05EA"), /*#__PURE__*/React.createElement("div", {
+    className: "hero-val"
+  }, fmt(result.calories, 0)))), /*#__PURE__*/React.createElement("div", {
+    className: "mini-grid"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "mini"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v"
+  }, fmt(result.fat, 1)), /*#__PURE__*/React.createElement("div", {
+    className: "l"
+  }, "\u05E9\u05D5\u05DE\u05DF \u05D2\u05F3")), /*#__PURE__*/React.createElement("div", {
+    className: "mini"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v"
+  }, fmt(result.carbs, 1)), /*#__PURE__*/React.createElement("div", {
+    className: "l"
+  }, "\u05E4\u05D7\u05DE\u05F3 \u05D2\u05F3")), /*#__PURE__*/React.createElement("div", {
+    className: "mini"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v"
+  }, fmt(result.fiber, 1)), /*#__PURE__*/React.createElement("div", {
+    className: "l"
+  }, "\u05E1\u05D9\u05D1\u05D9\u05DD \u05D2\u05F3")), /*#__PURE__*/React.createElement("div", {
+    className: "mini"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v"
+  }, fmt(result.sugar, 1)), /*#__PURE__*/React.createElement("div", {
+    className: "l"
+  }, "\u05E1\u05D5\u05DB\u05E8 \u05D2\u05F3")), /*#__PURE__*/React.createElement("div", {
+    className: "mini"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v"
+  }, fmt(result.sodium, 0)), /*#__PURE__*/React.createElement("div", {
+    className: "l"
+  }, "\u05E0\u05EA\u05E8\u05DF \u05DE\u05F4\u05D2")), /*#__PURE__*/React.createElement("div", {
+    className: "mini"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v"
+  }, fmt(result.cholesterol, 0)), /*#__PURE__*/React.createElement("div", {
+    className: "l"
+  }, "\u05DB\u05D5\u05DC\u05E1\u05F3 \u05DE\u05F4\u05D2"))), /*#__PURE__*/React.createElement("div", {
+    className: "actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-add",
+    onClick: addToToday
+  }, "\uFF0B \u05D4\u05D5\u05E1\u05E3 \u05DC\u05D9\u05D5\u05DD"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-save",
+    onClick: saveFood
+  }, "\u2605 \u05E9\u05DE\u05D5\u05E8 \u05DB\u05DE\u05D0\u05DB\u05DC")), saveErr && /*#__PURE__*/React.createElement("div", {
+    className: "err"
+  }, saveErr))), tab === "foods" && /*#__PURE__*/React.createElement("div", {
+    className: "card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "eyebrow"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "dot"
+  }), "\u05D4\u05DE\u05D0\u05DB\u05DC\u05D9\u05DD \u05E9\u05DC\u05D9"), saved.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "empty"
+  }, "\u05D0\u05D9\u05DF \u05E2\u05D3\u05D9\u05D9\u05DF \u05DE\u05D0\u05DB\u05DC\u05D9\u05DD \u05E9\u05DE\u05D5\u05E8\u05D9\u05DD.", /*#__PURE__*/React.createElement("br", null), "\u05D1\"\u05D4\u05D5\u05E1\u05E4\u05D4\", \u05D0\u05D7\u05E8\u05D9 \u05E9\u05EA\u05D6\u05D9\u05DF \u05E2\u05E8\u05DB\u05D9\u05DD, \u05D4\u05E7\u05E9 \u05E2\u05DC \"\u2605 \u05E9\u05DE\u05D5\u05E8 \u05DB\u05DE\u05D0\u05DB\u05DC\" \u05DB\u05D3\u05D9 \u05E9\u05D9\u05D5\u05E4\u05D9\u05E2 \u05DB\u05D0\u05DF \u05DC\u05E9\u05D9\u05DE\u05D5\u05E9 \u05D7\u05D5\u05D6\u05E8.") : saved.map(f => /*#__PURE__*/React.createElement("div", {
+    className: "sf",
+    key: f.id
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sf-top"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "sf-nm"
+  }, f.name), /*#__PURE__*/React.createElement("div", {
+    className: "sf-meta"
+  }, "\u05DE\u05E0\u05D4: ", fmt(f.serving, 0), " \u05D2\u05F3 \xB7 ", /*#__PURE__*/React.createElement("b", null, fmt(num(f.per100.protein) * f.serving / 100, 1), " \u05D2\u05F3 \u05D7\u05DC\u05D1\u05D5\u05DF"), " \xB7 ", fmt(num(f.per100.calories) * f.serving / 100, 0), " \u05E7\u05DC\u05F3"))), /*#__PURE__*/React.createElement("div", {
+    className: "sf-act"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "sf-btn sf-add",
+    onClick: () => {
+      quickAddSaved(f);
+      setTab("today");
+    }
+  }, "\uFF0B \u05DC\u05D9\u05D5\u05DD"), /*#__PURE__*/React.createElement("button", {
+    className: "sf-btn sf-edit",
+    onClick: () => loadSavedToEditor(f)
+  }, "\u05E2\u05E8\u05D5\u05DA \u05DB\u05DE\u05D5\u05EA"), /*#__PURE__*/React.createElement("button", {
+    className: "sf-btn sf-del",
+    onClick: () => deleteSaved(f.id),
+    "aria-label": "\u05DE\u05D7\u05E7"
+  }, "\uD83D\uDDD1")))))), /*#__PURE__*/React.createElement("div", {
+    className: "tabbar"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "tabbtn" + (tab === "today" ? " on" : ""),
+    onClick: () => setTab("today")
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ic"
+  }, "\uD83D\uDCCA"), "\u05D4\u05D9\u05D5\u05DD", today.length > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "badge"
+  }, today.length)), /*#__PURE__*/React.createElement("button", {
+    className: "tabbtn" + (tab === "add" ? " on" : ""),
+    onClick: () => setTab("add")
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ic"
+  }, "\uFF0B"), "\u05D4\u05D5\u05E1\u05E4\u05D4"), /*#__PURE__*/React.createElement("button", {
+    className: "tabbtn" + (tab === "foods" ? " on" : ""),
+    onClick: () => setTab("foods")
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "ic"
+  }, "\u2605"), "\u05DE\u05D0\u05DB\u05DC\u05D9\u05DD", saved.length > 0 && /*#__PURE__*/React.createElement("span", {
+    className: "badge"
+  }, saved.length))));
 }
-
-ReactDOM.createRoot(document.getElementById('root')).render(<MacroCalculator />);
+ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(MacroCalculator, null));
 </script>
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});</script>
 </body>
