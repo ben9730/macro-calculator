@@ -239,6 +239,16 @@ function MacroCalculator() {
     ...p,
     [k]: v
   }));
+  function clearForm() {
+    setProductName("");
+    setPer100(EMPTY);
+    setGrams("");
+    setNetWeight(null);
+    setEditingFoodId(null);
+    setErr("");
+    setErrDetail("");
+    setSaveErr("");
+  }
   function saveApiKey() {
     const key = apiKeyInput.trim();
     store.set("anthropic-api-key", key);
@@ -757,12 +767,18 @@ function MacroCalculator() {
     className: "errd"
   }, "\u05E4\u05E8\u05D8\u05D9\u05DD: ", errDetail))), /*#__PURE__*/React.createElement("div", {
     className: "card"
-  }, /*#__PURE__*/React.createElement("input", {
+  }, /*#__PURE__*/React.createElement("div", {style:{display:"flex",alignItems:"center",gap:"8px",marginBottom:"13px"}}, /*#__PURE__*/React.createElement("input", {
     className: "pname",
+    style:{marginBottom:0,flex:1},
     placeholder: "\u05E9\u05DD \u05D4\u05DE\u05D5\u05E6\u05E8 (\u05DC\u05D3\u05D5\u05D2\u05DE\u05D4: \u05E7\u05D1\u05D1 \u05E8\u05D5\u05DE\u05E0\u05D9)",
     value: productName,
     onChange: e => setProductName(e.target.value)
-  }), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("button", {
+    className: "x",
+    onClick: clearForm,
+    title: "\u05E0\u05E7\u05D4 \u05E9\u05D3\u05D5\u05EA",
+    style:{fontSize:"18px",color:"#6E6356",flexShrink:0}
+  }, "\u2715")), /*#__PURE__*/React.createElement("div", {
     className: "label-panel"
   }, /*#__PURE__*/React.createElement("div", {
     className: "label-cap"
