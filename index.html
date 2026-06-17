@@ -1,217 +1,598 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="he">
+<html lang="he" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>מחשבון חלבון</title>
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="חלבון" />
-<link rel="apple-touch-icon" href="icon.png" />
-<link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#14100D" />
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=Rubik:wght@700;800&display=swap" rel="stylesheet" />
-<style>*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}body{background:#14100D;color:#F3EDE4;font-family:'Heebo',sans-serif;-webkit-font-smoothing:antialiased;}</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="חלבון" />
+  <link rel="apple-touch-icon" href="icon.png" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#14100D" />
+  <title>מחשבון חלבון וקלוריות</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const {useState,useEffect} = React;
-const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},};
-const todayKey=(()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;})();
-const FIELDS=[
-  {key:'calories',label:'קלוריות',unit:'',dec:0},
-  {key:'protein',label:'חלבון',unit:"ג'",dec:1},
-  {key:'fat',label:'שומן',unit:"ג'",dec:1},
-  {key:'saturatedFat',label:'מתוכו רווי',unit:"ג'",dec:1},
-  {key:'carbs',label:'פחמימות',unit:"ג'",dec:1},
-  {key:'sugar',label:'מתוכו סוכר',unit:"ג'",dec:1},
-  {key:'fiber',label:'סיבים',unit:"ג'",dec:1},
-  {key:'sodium',label:'נתרן',unit:'מ"ג',dec:0},
-  {key:'cholesterol',label:'כולסטרול',unit:'מ"ג',dec:0},
+const { useState, useEffect, useRef } = React;
+
+const todayKey = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+})();
+
+const FIELDS = [
+  { key: "calories",     label: "קלוריות",       unit: "",     dec: 0 },
+  { key: "protein",      label: "חלבון",          unit: "ג׳",   dec: 1 },
+  { key: "fat",          label: "שומן",           unit: "ג׳",   dec: 1 },
+  { key: "saturatedFat", label: "מתוכו רווי",     unit: "ג׳",   dec: 1 },
+  { key: "carbs",        label: "פחמימות",        unit: "ג׳",   dec: 1 },
+  { key: "sugar",        label: "מתוכו סוכר",     unit: "ג׳",   dec: 1 },
+  { key: "fiber",        label: "סיבים",          unit: "ג׳",   dec: 1 },
+  { key: "sodium",       label: "נתרן",           unit: 'מ"ג',  dec: 0 },
+  { key: "cholesterol",  label: "כולסטרול",       unit: 'מ"ג',  dec: 0 },
 ];
-const EMPTY=FIELDS.reduce((a,f)=>({...a,[f.key]:''}),{});
-const SEEDS=[{id:'seed-cottage9',seed:true,name:"קוטג' 9%",serving:100,per100:{calories:'128',protein:'10.5',fat:'9',saturatedFat:'5.85',carbs:'1.2',sugar:'1.2',fiber:'',sodium:'350',cholesterol:'27'}}];
-const num=v=>{const n=parseFloat(v);return Number.isFinite(n)?n:0;};
-const fmt=(v,dec=1)=>{const n=Number(v);if(!Number.isFinite(n))return '0';return(Math.round(n*(dec?10:1))/(dec?10:1)).toLocaleString('en-US',{maximumFractionDigits:dec});};
+const EMPTY = FIELDS.reduce((a, f) => ({ ...a, [f.key]: "" }), {});
 
-function App(){
-  const [tab,setTab]=useState('today');
-  const [per100,set100]=useState(EMPTY);
-  const [pname,setPname]=useState('');
-  const [grams,setGrams]=useState('');
-  const [nw,setNW]=useState(null);
-  const [today,setToday]=useState([]);
-  const [goal,setGoal]=useState('150');
-  const [saved,setSaved]=useState(SEEDS);
-  const [flash,setFlash]=useState(null);
-  const [saveErr,setSaveErr]=useState('');
+const SEED_FOODS = [
+  {
+    id: "seed-cottage9", seed: true, name: "קוטג׳ 9%", serving: 100,
+    per100: { calories: "128", protein: "10.5", fat: "9", saturatedFat: "5.85", carbs: "1.2", sugar: "1.2", fiber: "", sodium: "350", cholesterol: "27" },
+  },
+];
 
-  useEffect(()=>{
-    const g=store.get('protein-goal');if(g)setGoal(g);
-    const d=store.get(`daylog:${todayKey}`);if(d)try{setToday(JSON.parse(d))}catch(e){}
-    let stored=[];const s=store.get('saved-foods');if(s)try{stored=JSON.parse(s)}catch(e){}
-    let removed=[];const r=store.get('removed-seeds');if(r)try{removed=JSON.parse(r)}catch(e){}
-    const ids=new Set(stored.map(f=>f.id));
-    const merged=[...stored];
-    SEEDS.forEach(seed=>{if(!ids.has(seed.id)&&!removed.includes(seed.id))merged.push(seed);});
-    setSaved(merged);store.set('saved-foods',JSON.stringify(merged));
-  },[]);
+const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+const fmt = (v, dec = 1) => {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "0";
+  const r = Math.round(n * Math.pow(10, dec)) / Math.pow(10, dec);
+  return r.toLocaleString("en-US", { maximumFractionDigits: dec });
+};
 
-  const pd=items=>store.set(`daylog:${todayKey}`,JSON.stringify(items));
-  const ps=list=>store.set('saved-foods',JSON.stringify(list));
-  const sf=k=>v=>set100(p=>({...p,[k]:v}));
-  const fac=num(grams)/100;
-  const res=FIELDS.reduce((a,f)=>({...a,[f.key]:num(per100[f.key])*fac}),{});
-  const hasData=num(grams)>0&&(num(per100.calories)>0||num(per100.protein)>0);
-  const mk=(name,p,g)=>{const f=num(g)/100;return{id:Date.now()+Math.random(),name:name||'מנה',grams:num(g),calories:num(p.calories)*f,protein:num(p.protein)*f,fat:num(p.fat)*f,carbs:num(p.carbs)*f,sodium:num(p.sodium)*f};};
-  const addDay=()=>{if(!hasData)return;const n=[...today,mk(pname,per100,grams)];setToday(n);pd(n);setTab('today');};
-  const saveFd=()=>{setSaveErr('');if(!pname.trim()){setSaveErr('תן שם למאכל');return;}if(!(num(per100.calories)>0||num(per100.protein)>0)){setSaveErr('מלא לפחות קלוריות או חלבון');return;}const food={id:Date.now(),name:pname.trim(),per100:{...per100},serving:num(grams)||100};const n=[food,...saved];setSaved(n);ps(n);setTab('foods');};
-  const qAdd=food=>{const n=[...today,mk(food.name,food.per100,food.serving)];setToday(n);pd(n);setFlash(food.id);setTimeout(()=>setFlash(null),800);};
-  const loadEd=food=>{set100({...EMPTY,...food.per100});setPname(food.name);setGrams(String(food.serving));setNW(null);setTab('add');};
-  const delSaved=id=>{const food=saved.find(f=>f.id===id);const n=saved.filter(f=>f.id!==id);setSaved(n);ps(n);if(food&&food.seed){let rem=[];const r=store.get('removed-seeds');if(r)try{rem=JSON.parse(r)}catch(e){}if(!rem.includes(id)){rem.push(id);store.set('removed-seeds',JSON.stringify(rem));}}};
-  const remItem=id=>{const n=today.filter(i=>i.id!==id);setToday(n);pd(n);};
-  const totals=today.reduce((a,i)=>({calories:a.calories+i.calories,protein:a.protein+i.protein,fat:a.fat+i.fat,carbs:a.carbs+i.carbs,sodium:a.sodium+i.sodium}),{calories:0,protein:0,fat:0,carbs:0,sodium:0});
-  const gPct=num(goal)>0?Math.min(100,(totals.protein/num(goal))*100):0;
+const store = {
+  get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+};
 
-  const C={
-    root:{direction:'rtl',background:'#14100D',color:'#F3EDE4',minHeight:'100vh',padding:'18px 13px calc(90px + env(safe-area-inset-bottom)) 13px',fontFamily:"'Heebo',sans-serif"},
-    wrap:{maxWidth:520,margin:'0 auto'},
-    card:{background:'#1C1714',border:'1px solid #2E251F',borderRadius:17,padding:15,marginBottom:13},
-    ey:{fontSize:11,fontWeight:700,letterSpacing:1.4,color:'#A89A8C',marginBottom:12,display:'flex',alignItems:'center',gap:8},
-    dot:{width:6,height:6,borderRadius:'50%',background:'#E2473D',display:'inline-block'},
-    tbar:{background:'#191512',border:'1px solid #2E251F',borderRadius:14,padding:15,marginBottom:13},
-    lp:{border:'2px dashed #E2473D',borderRadius:14,padding:'12px 11px 4px',background:'#191512'},
-    bar:{height:9,background:'#2A211B',borderRadius:5,overflow:'hidden'},
-    nav:{position:'fixed',bottom:0,left:0,right:0,background:'#19140F',borderTop:'1px solid #2E251F',display:'flex',padding:'8px 8px calc(8px + env(safe-area-inset-bottom))'},
-  };
+async function preprocessImage(file) {
+  try {
+    const dataUrl = await new Promise((res, rej) => {
+      const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file);
+    });
+    const img = await new Promise((res, rej) => {
+      const im = new window.Image(); im.onload = () => res(im); im.onerror = rej; im.src = dataUrl;
+    });
+    const maxDim = 1568;
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    c.getContext("2d").drawImage(img, 0, 0, w, h);
+    const out = c.toDataURL("image/jpeg", 0.85);
+    return { base64: out.split(",")[1], mediaType: "image/jpeg" };
+  } catch (e) {
+    const b64 = await new Promise((res, rej) => {
+      const r = new FileReader(); r.onload = () => res(r.result.split(",")[1]); r.onerror = rej; r.readAsDataURL(file);
+    });
+    let mt = file.type || "image/jpeg";
+    if (mt === "image/heic" || mt === "image/heif" || !mt) mt = "image/jpeg";
+    return { base64: b64, mediaType: mt };
+  }
+}
 
-  return(
-  <div style={C.root}>
-  <div style={C.wrap}>
-    <div style={{fontFamily:'Rubik',fontWeight:800,fontSize:25,letterSpacing:-.8}}>מחשבון <span style={{color:'#F0B73E'}}>חלבון</span> וקלוריות</div>
-    <div style={{fontSize:12.5,color:'#A89A8C',marginTop:6,marginBottom:16}}>שמור מאכלים קבועים · עקוב אחרי החלבון היומי</div>
+function parseJson(text) {
+  let clean = (text || "").replace(/```json|```/g, "").trim();
+  const s = clean.indexOf("{"); const e = clean.lastIndexOf("}");
+  if (s !== -1 && e !== -1) clean = clean.slice(s, e + 1);
+  return JSON.parse(clean);
+}
 
-    {tab==='today'&&<>
-      <div style={C.tbar}>
-        <div style={{display:'flex',gap:18,alignItems:'baseline',marginBottom:12}}>
-          <div style={{fontFamily:'Rubik',fontWeight:800,fontSize:34,color:'#F0B73E',lineHeight:1}}>{fmt(totals.protein,1)}<span style={{fontSize:14,fontWeight:600}}> ג׳ חלבון</span></div>
-          <div style={{fontFamily:'Rubik',fontWeight:700,fontSize:19,color:'#E8DCCD'}}>{fmt(totals.calories,0)} <span style={{fontSize:12,color:'#9A8D7F',fontWeight:500}}>קל׳</span></div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:7,fontSize:12.5,color:'#9A8D7F',marginBottom:8}}>
-          יעד חלבון:
-          <input style={{width:50,background:'#14100D',border:'1px solid #3A2E26',color:'#F0B73E',fontFamily:'Rubik',fontWeight:700,textAlign:'center',borderRadius:6,padding:5,outline:'none',fontSize:13}} inputMode="numeric" value={goal} onChange={e=>{setGoal(e.target.value);store.set('protein-goal',e.target.value);}}/>
-          ג׳ · {fmt(gPct,0)}%
-        </div>
-        <div style={C.bar}><div style={{height:'100%',background:'linear-gradient(90deg,#C8902B,#F0B73E)',borderRadius:5,width:gPct+'%',transition:'width .35s'}}></div></div>
-      </div>
+const EXTRACT_PROMPT = `קראת תווית מזון ישראלית (בעברית). חלץ את הערכים התזונתיים מעמודת "ל-100 גרם".
+מיפוי: אנרגיה/קלוריות=calories, חלבונים=protein, סך השומנים=fat, חומצת שומן רוויות=saturatedFat, חומצת שומן טרנס=transFat, סך הפחמימות=carbs, סוכרים=sugar, סיבים תזונתיים=fiber, נתרן=sodium, כולסטרול=cholesterol.
+החזר אך ורק אובייקט JSON תקין, ללא markdown וללא טקסט נוסף, עם המפתחות: calories, protein, fat, saturatedFat, transFat, carbs, sugar, fiber, sodium, cholesterol, productName, netWeightGrams.
+כל ערכי המזון ל-100 גרם. sodium ו-cholesterol במ"ג, השאר בגרמים, calories בקק"ל.
+"פחות מ-0.5" => 0.5. ערך שלא נמצא => null. productName = שם המוצר. netWeightGrams = משקל נטו בגרמים אם מצוין, אחרת null.`;
 
-      {saved.length>0&&<div style={C.card}>
-        <div style={C.ey}><span style={C.dot}></span>הוספה מהירה</div>
-        <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-          {saved.map(f=><div key={f.id} style={{background:flash===f.id?'#23351F':'#241D19',border:`1px solid ${flash===f.id?'#3C5733':'#3A2E26'}`,borderRadius:12,padding:'10px 13px',cursor:'pointer',minHeight:50,display:'flex',flexDirection:'column',gap:2,justifyContent:'center'}} onClick={()=>qAdd(f)}>
-            <div style={{fontSize:13.5,fontWeight:600}}>{f.name}</div>
-            <div style={{fontSize:11,color:'#9A8D7F'}}>{fmt(f.serving,0)} ג׳ · <b style={{color:'#F0B73E'}}>{fmt(num(f.per100.protein)*f.serving/100,1)} ג׳ חלבון</b></div>
-          </div>)}
-        </div>
-      </div>}
+function MacroCalculator() {
+  const [tab, setTab] = useState("today");
+  const [per100, setPer100] = useState(EMPTY);
+  const [productName, setProductName] = useState("");
+  const [netWeight, setNetWeight] = useState(null);
+  const [grams, setGrams] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [errDetail, setErrDetail] = useState("");
+  const [saveErr, setSaveErr] = useState("");
+  const [today, setToday] = useState([]);
+  const [goal, setGoal] = useState("150");
+  const [saved, setSaved] = useState(SEED_FOODS);
+  const [flash, setFlash] = useState(null);
+  const [apiKey, setApiKey] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState("");
+  const fileRef = useRef(null);
 
-      <div style={C.card}>
-        <div style={C.ey}><span style={C.dot}></span>היום · {todayKey}</div>
-        {today.length===0?<div style={{textAlign:'center',color:'#7E7367',fontSize:13,padding:'18px 8px',lineHeight:1.6}}>עוד לא הוספת מנות היום.<br/>לחץ על מאכל שמור למעלה, או עבור ל״הוספה״.</div>:<>
-          {today.map(i=><div key={i.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:12,background:'#211A16',border:'1px solid #2E251F',borderRadius:11,marginBottom:8}}>
-            <div>
-              <div style={{fontSize:14.5,fontWeight:500}}>{i.name}</div>
-              <div style={{fontSize:12,color:'#8E8175',marginTop:3}}>{fmt(i.grams,0)} ג׳ · <b style={{color:'#F0B73E'}}>{fmt(i.protein,1)} ג׳ חלבון</b> · {fmt(i.calories,0)} קל׳</div>
+  useEffect(() => {
+    const g = store.get("protein-goal"); if (g) setGoal(g);
+    const ak = store.get("anthropic-api-key"); if (ak) setApiKey(ak);
+    const d = store.get(`daylog:${todayKey}`); if (d) try { setToday(JSON.parse(d)); } catch (e) {}
+    let stored = [];
+    const s = store.get("saved-foods"); if (s) try { stored = JSON.parse(s); } catch (e) {}
+    let removed = [];
+    const r = store.get("removed-seeds"); if (r) try { removed = JSON.parse(r); } catch (e) {}
+    const ids = new Set(stored.map((f) => f.id));
+    const merged = [...stored];
+    SEED_FOODS.forEach((seed) => { if (!ids.has(seed.id) && !removed.includes(seed.id)) merged.push(seed); });
+    setSaved(merged);
+    store.set("saved-foods", JSON.stringify(merged));
+  }, []);
+
+  const persistDay    = (items) => store.set(`daylog:${todayKey}`, JSON.stringify(items));
+  const persistSaved  = (list)  => store.set("saved-foods", JSON.stringify(list));
+  const setField      = (k, v)  => setPer100((p) => ({ ...p, [k]: v }));
+
+  function saveApiKey() {
+    const key = apiKeyInput.trim();
+    store.set("anthropic-api-key", key);
+    setApiKey(key);
+    setShowSettings(false);
+  }
+
+  async function handleFile(e) {
+    const file = e.target.files && e.target.files[0];
+    if (fileRef.current) fileRef.current.value = "";
+    if (!file) return;
+    setErr(""); setErrDetail(""); setLoading(true);
+    try {
+      const { base64, mediaType } = await preprocessImage(file);
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: [
+            { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+            { type: "text", text: EXTRACT_PROMPT },
+          ]}],
+        }),
+      });
+      const raw = await res.text();
+      let data = null; try { data = JSON.parse(raw); } catch (_) {}
+      if (!res.ok) {
+        const m = (data && data.error && data.error.message) || (raw ? raw.slice(0, 220) : "") || ("HTTP " + res.status);
+        throw new Error("שרת " + res.status + ": " + m);
+      }
+      if (!data || !data.content) throw new Error((data && data.error && data.error.message) || "תגובה ריקה מהשרת");
+      const text = data.content.filter((b) => b.type === "text").map((b) => b.text).join("\n");
+      let parsed; try { parsed = parseJson(text); } catch (_) { throw new Error("התקבלה תשובה אך לא הצלחתי לפענח ממנה ערכים."); }
+      const next = { ...EMPTY };
+      FIELDS.forEach((f) => { if (parsed[f.key] !== null && parsed[f.key] !== undefined) next[f.key] = String(parsed[f.key]); });
+      setPer100(next);
+      if (parsed.productName) setProductName(parsed.productName);
+      if (parsed.netWeightGrams) { setNetWeight(num(parsed.netWeightGrams)); setGrams(String(num(parsed.netWeightGrams))); }
+    } catch (e2) {
+      setErr("קריאת התווית נכשלה. אפשר להזין ידנית למטה.");
+      setErrDetail(String(e2 && e2.message ? e2.message : e2));
+    } finally { setLoading(false); }
+  }
+
+  const factor  = num(grams) / 100;
+  const result  = FIELDS.reduce((a, f) => ({ ...a, [f.key]: num(per100[f.key]) * factor }), {});
+  const hasData = num(grams) > 0 && (num(per100.calories) > 0 || num(per100.protein) > 0);
+
+  function makeEntry(name, p100, g) {
+    const fac = num(g) / 100;
+    return { id: Date.now() + Math.random(), name: name || "מנה ללא שם", grams: num(g),
+      calories: num(p100.calories) * fac, protein: num(p100.protein) * fac,
+      fat: num(p100.fat) * fac, carbs: num(p100.carbs) * fac, sodium: num(p100.sodium) * fac };
+  }
+
+  function addToToday() {
+    if (!hasData) return;
+    const next = [...today, makeEntry(productName, per100, grams)];
+    setToday(next); persistDay(next); setTab("today");
+  }
+
+  function saveFood() {
+    setSaveErr("");
+    if (!productName.trim()) { setSaveErr("תן שם למאכל כדי לשמור אותו"); return; }
+    if (!(num(per100.calories) > 0 || num(per100.protein) > 0)) { setSaveErr("אין ערכים לשמור — מלא לפחות קלוריות או חלבון"); return; }
+    const food = { id: Date.now(), name: productName.trim(), per100: { ...per100 }, serving: num(grams) || 100 };
+    const next = [food, ...saved]; setSaved(next); persistSaved(next); setTab("foods");
+  }
+
+  function quickAddSaved(food) {
+    const next = [...today, makeEntry(food.name, food.per100, food.serving)];
+    setToday(next); persistDay(next);
+    setFlash(food.id); setTimeout(() => setFlash(null), 900);
+  }
+
+  function loadSavedToEditor(food) {
+    setPer100({ ...EMPTY, ...food.per100 }); setProductName(food.name);
+    setGrams(String(food.serving)); setNetWeight(null); setTab("add");
+  }
+
+  function deleteSaved(id) {
+    const food = saved.find((f) => f.id === id);
+    const next = saved.filter((f) => f.id !== id); setSaved(next); persistSaved(next);
+    if (food && food.seed) {
+      let removed = []; const r = store.get("removed-seeds"); if (r) try { removed = JSON.parse(r); } catch (e) {}
+      if (!removed.includes(id)) { removed.push(id); store.set("removed-seeds", JSON.stringify(removed)); }
+    }
+  }
+
+  function removeItem(id) { const next = today.filter((i) => i.id !== id); setToday(next); persistDay(next); }
+  function clearDay()     { setToday([]); persistDay([]); }
+
+  const dayTotals = today.reduce((a, i) => ({
+    calories: a.calories + i.calories, protein: a.protein + i.protein,
+    fat: a.fat + i.fat, carbs: a.carbs + i.carbs, sodium: a.sodium + i.sodium,
+  }), { calories: 0, protein: 0, fat: 0, carbs: 0, sodium: 0 });
+  const goalPct = num(goal) > 0 ? Math.min(100, (dayTotals.protein / num(goal)) * 100) : 0;
+
+  return (
+    <div className="macro-root">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&family=Rubik:wght@500;600;700;800&display=swap');
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+        .macro-root{direction:rtl;font-family:'Heebo',sans-serif;background:#14100D;color:#F3EDE4;min-height:100vh;
+          padding:18px 13px calc(96px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased;}
+        .wrap{max-width:520px;margin:0 auto;}
+        .header{display:flex;justify-content:space-between;align-items:center;}
+        .brand{font-family:'Rubik';font-weight:800;font-size:25px;line-height:1;letter-spacing:-.8px;}
+        .brand b{color:#F0B73E;}
+        .settings-btn{background:none;border:none;color:#7E7367;font-size:20px;cursor:pointer;padding:4px 8px;border-radius:8px;min-height:40px;}
+        .settings-btn:active{color:#F0B73E;}
+        .sub{font-size:12.5px;color:#A89A8C;margin-top:6px;margin-bottom:16px;}
+        .card{background:#1C1714;border:1px solid #2E251F;border-radius:17px;padding:15px;margin-bottom:13px;}
+        .eyebrow{font-size:11px;font-weight:700;letter-spacing:1.4px;color:#A89A8C;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+        .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:#E2473D;}
+        .upload{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:none;cursor:pointer;
+          background:#F0B73E;color:#14100D;font-family:'Rubik';font-weight:700;font-size:16px;padding:16px;border-radius:13px;min-height:54px;}
+        .upload:active{filter:brightness(.94);}
+        .hint{font-size:12px;color:#7E7367;text-align:center;margin-top:9px;}
+        .no-key{background:#191512;border:1px dashed #3A2E26;border-radius:12px;padding:14px;text-align:center;color:#7E7367;font-size:13px;line-height:1.6;}
+        .no-key button{background:none;border:none;color:#F0B73E;cursor:pointer;font-family:'Heebo';font-size:13px;text-decoration:underline;margin-top:4px;}
+        .err{background:#2A1715;border:1px solid #5A2620;color:#F0B6AE;font-size:13px;padding:11px 13px;border-radius:11px;margin-top:12px;line-height:1.5;}
+        .errd{margin-top:8px;padding-top:8px;border-top:1px solid #5A2620;font-size:11px;color:#C89089;word-break:break-word;font-family:monospace;direction:ltr;text-align:left;}
+        .loading{display:flex;align-items:center;gap:11px;color:#A89A8C;font-size:14px;justify-content:center;padding:14px 0;min-height:54px;}
+        .spin{width:18px;height:18px;border:2.5px solid #3A2E26;border-top-color:#F0B73E;border-radius:50%;animation:sp .7s linear infinite;}
+        @keyframes sp{to{transform:rotate(360deg)}}
+        .label-panel{border:2px dashed #E2473D;border-radius:14px;padding:12px 11px 4px;background:#191512;}
+        .label-cap{font-family:'Rubik';font-weight:700;font-size:12px;color:#E2473D;margin-bottom:11px;text-align:center;}
+        .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+        .frow{display:flex;align-items:center;justify-content:space-between;gap:6px;background:#211A16;border:1px solid #322820;border-radius:10px;padding:7px 9px;}
+        .frow label{font-size:12.5px;color:#CDBFB1;font-weight:500;white-space:nowrap;}
+        .frow .inp{display:flex;align-items:center;gap:4px;}
+        .frow input{width:56px;background:#14100D;border:1px solid #3A2E26;color:#F3EDE4;font-family:'Rubik';font-weight:600;font-size:15px;text-align:center;border-radius:7px;padding:8px 3px;outline:none;}
+        .frow input:focus{border-color:#F0B73E;}
+        .frow .u{font-size:11px;color:#7E7367;min-width:22px;}
+        .qrow{display:flex;flex-wrap:wrap;gap:7px;}
+        .chip{background:#241D19;border:1px solid #3A2E26;color:#E8DCCD;font-family:'Heebo';font-weight:500;font-size:13.5px;padding:11px 14px;border-radius:11px;cursor:pointer;min-height:42px;}
+        .chip:active{filter:brightness(1.15);}
+        .chip.on{background:#F0B73E;border-color:#F0B73E;color:#14100D;font-weight:700;}
+        .gramwrap{display:flex;align-items:center;gap:10px;margin-top:11px;background:#211A16;border:1px solid #322820;border-radius:11px;padding:11px 14px;}
+        .gramwrap input{flex:1;background:none;border:none;color:#F3EDE4;font-family:'Rubik';font-weight:700;font-size:23px;outline:none;width:100%;}
+        .gramwrap span{color:#A89A8C;font-size:14px;font-weight:500;}
+        .hero{display:flex;gap:11px;margin-bottom:11px;}
+        .hero-box{flex:1;border-radius:15px;padding:15px 14px;}
+        .hero-protein{background:linear-gradient(150deg,#2A2110,#211A12);border:1px solid #4A3A18;}
+        .hero-cal{background:#211613;border:1px solid #4A2722;}
+        .hero-lbl{font-size:12px;font-weight:600;margin-bottom:5px;}
+        .hero-protein .hero-lbl{color:#F0B73E;}
+        .hero-cal .hero-lbl{color:#E27C72;}
+        .hero-val{font-family:'Rubik';font-weight:800;line-height:1;letter-spacing:-1px;font-size:36px;}
+        .hero-protein .hero-val{color:#F0B73E;}
+        .hero-cal .hero-val{color:#F3EDE4;}
+        .hero-val small{font-size:14px;font-weight:600;margin-right:3px;}
+        .mini-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+        .mini{background:#211A16;border:1px solid #2E251F;border-radius:11px;padding:10px 6px;text-align:center;}
+        .mini .v{font-family:'Rubik';font-weight:700;font-size:16px;}
+        .mini .l{font-size:10.5px;color:#9A8D7F;margin-top:3px;}
+        .actions{display:flex;gap:9px;margin-top:13px;}
+        .btn{flex:1;border:none;font-family:'Rubik';font-weight:700;font-size:15px;padding:14px;border-radius:12px;cursor:pointer;min-height:50px;}
+        .btn-add{background:#23351F;border:1px solid #3C5733;color:#A7E08A;}
+        .btn-save{background:#211A16;border:1px solid #3A2E26;color:#E8DCCD;}
+        .btn:active{filter:brightness(1.15);}
+        .totalbar{background:#191512;border:1px solid #2E251F;border-radius:14px;padding:15px;margin-bottom:13px;}
+        .tot-row{display:flex;gap:18px;align-items:baseline;margin-bottom:12px;}
+        .tot-p{font-family:'Rubik';font-weight:800;font-size:34px;color:#F0B73E;line-height:1;}
+        .tot-p small{font-size:14px;font-weight:600;}
+        .tot-c{font-family:'Rubik';font-weight:700;font-size:19px;color:#E8DCCD;}
+        .tot-c small{font-size:12px;color:#9A8D7F;font-weight:500;}
+        .goalrow{display:flex;align-items:center;gap:7px;font-size:12.5px;color:#9A8D7F;margin-bottom:8px;}
+        .goalrow input{width:50px;background:#14100D;border:1px solid #3A2E26;color:#F0B73E;font-family:'Rubik';font-weight:700;text-align:center;border-radius:6px;padding:5px;outline:none;font-size:13px;}
+        .bar{height:9px;background:#2A211B;border-radius:5px;overflow:hidden;}
+        .bar-fill{height:100%;background:linear-gradient(90deg,#C8902B,#F0B73E);border-radius:5px;transition:width .35s ease;}
+        .item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;background:#211A16;border:1px solid #2E251F;border-radius:11px;margin-bottom:8px;}
+        .item .nm{font-size:14.5px;font-weight:500;}
+        .item .meta{font-size:12px;color:#8E8175;margin-top:3px;}
+        .item .meta b{color:#F0B73E;font-weight:700;}
+        .x{background:none;border:none;color:#6E6356;font-size:24px;cursor:pointer;line-height:1;padding:4px 8px;border-radius:8px;min-width:40px;min-height:40px;}
+        .x:active{color:#E2473D;background:#2A1715;}
+        .empty{text-align:center;color:#7E7367;font-size:13px;padding:18px 8px;line-height:1.6;}
+        .clear{background:none;border:none;color:#7E7367;font-size:12.5px;cursor:pointer;text-decoration:underline;padding:8px;}
+        .pname{background:#191512;border:1px solid #322820;color:#F3EDE4;font-family:'Heebo';font-weight:500;font-size:15px;outline:none;width:100%;padding:11px 12px;border-radius:11px;margin-bottom:13px;text-align:right;}
+        .pname:focus{border-color:#F0B73E;}
+        .qa-wrap{display:flex;flex-wrap:wrap;gap:8px;}
+        .qa{background:#241D19;border:1px solid #3A2E26;border-radius:12px;padding:10px 13px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:50px;justify-content:center;transition:transform .12s,background .2s;}
+        .qa:active{filter:brightness(1.15);}
+        .qa.flash{background:#23351F;border-color:#3C5733;transform:scale(.96);}
+        .qa .qn{font-size:13.5px;font-weight:600;color:#F3EDE4;}
+        .qa .qm{font-size:11px;color:#9A8D7F;}
+        .qa .qm b{color:#F0B73E;}
+        .sf{background:#211A16;border:1px solid #2E251F;border-radius:13px;padding:13px;margin-bottom:9px;}
+        .sf-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;}
+        .sf-nm{font-size:15.5px;font-weight:700;}
+        .sf-meta{font-size:12px;color:#8E8175;margin-top:3px;}
+        .sf-meta b{color:#F0B73E;}
+        .sf-act{display:flex;gap:8px;}
+        .sf-btn{flex:1;border:none;font-family:'Heebo';font-weight:600;font-size:13px;padding:10px;border-radius:10px;cursor:pointer;min-height:42px;}
+        .sf-add{background:#23351F;border:1px solid #3C5733;color:#A7E08A;}
+        .sf-edit{background:#211A16;border:1px solid #3A2E26;color:#CDBFB1;}
+        .sf-del{background:#241715;border:1px solid #4A2620;color:#E29089;flex:0 0 46px;}
+        .sf-btn:active{filter:brightness(1.15);}
+        .tabbar{position:fixed;bottom:0;left:0;right:0;background:#19140F;border-top:1px solid #2E251F;display:flex;
+          padding:8px 8px calc(8px + env(safe-area-inset-bottom));z-index:50;}
+        .tabbtn{flex:1;background:none;border:none;color:#8E8175;display:flex;flex-direction:column;align-items:center;gap:3px;
+          font-family:'Heebo';font-size:11px;font-weight:600;padding:8px 0;cursor:pointer;border-radius:10px;min-height:50px;}
+        .tabbtn .ic{font-size:21px;line-height:1;}
+        .tabbtn.on{color:#F0B73E;}
+        .badge{background:#F0B73E;color:#14100D;font-family:'Rubik';font-weight:700;font-size:10px;border-radius:9px;padding:1px 6px;margin-right:4px;}
+        button:focus-visible,input:focus-visible{outline:2px solid #F0B73E;outline-offset:2px;}
+        @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+        /* Settings modal */
+        .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;}
+        .modal{background:#1C1714;border:1px solid #2E251F;border-radius:20px;padding:22px;width:100%;max-width:380px;}
+        .modal h3{font-family:'Rubik';font-weight:700;font-size:18px;margin-bottom:16px;color:#F3EDE4;}
+        .modal-label{font-size:13px;color:#A89A8C;display:block;margin-bottom:6px;}
+        .modal-input{width:100%;background:#191512;border:1px solid #3A2E26;color:#F3EDE4;font-family:'Heebo';font-size:14px;
+          padding:11px 12px;border-radius:10px;outline:none;margin-bottom:10px;direction:ltr;}
+        .modal-input:focus{border-color:#F0B73E;}
+        .modal-hint{font-size:11.5px;color:#7E7367;line-height:1.6;margin-bottom:16px;}
+        .modal-hint a{color:#F0B73E;}
+        .modal-key-status{font-size:12px;color:#A7E08A;margin-bottom:12px;}
+        .modal-actions{display:flex;gap:10px;}
+        .modal-save{flex:1;background:#F0B73E;color:#14100D;border:none;font-family:'Rubik';font-weight:700;font-size:15px;padding:13px;border-radius:11px;cursor:pointer;}
+        .modal-cancel{flex:1;background:#211A16;border:1px solid #3A2E26;color:#A89A8C;font-family:'Rubik';font-weight:600;font-size:15px;padding:13px;border-radius:11px;cursor:pointer;}
+        .modal-clear{width:100%;background:transparent;border:1px solid #4A2620;color:#E29089;font-family:'Heebo';font-size:13px;padding:9px;border-radius:10px;cursor:pointer;margin-top:8px;}
+      `}</style>
+
+      {/* Settings modal */}
+      {showSettings && (
+        <div className="overlay" onClick={() => setShowSettings(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>⚙ הגדרות</h3>
+            <label className="modal-label">מפתח API של Anthropic</label>
+            <input
+              className="modal-input"
+              type="password"
+              placeholder="sk-ant-api03-..."
+              value={apiKeyInput}
+              onChange={e => setApiKeyInput(e.target.value)}
+            />
+            {apiKey && <div className="modal-key-status">✓ מפתח שמור — סריקת תוויות פעילה</div>}
+            <div className="modal-hint">
+              המפתח נשמר רק במכשיר שלך ומשמש רק לסריקת תוויות מזון.<br />
+              השג מפתח חינמי ב: <a>console.anthropic.com</a>
             </div>
-            <button style={{background:'none',border:'none',color:'#6E6356',fontSize:24,cursor:'pointer',padding:'4px 8px',borderRadius:8,minWidth:40,minHeight:40,lineHeight:1}} onClick={()=>remItem(i.id)}>×</button>
-          </div>)}
-          <div style={{textAlign:'center',marginTop:6}}><button style={{background:'none',border:'none',color:'#7E7367',fontSize:12.5,cursor:'pointer',textDecoration:'underline',padding:8}} onClick={()=>{setToday([]);pd([]);}}>נקה את היום</button></div>
-        </>}
-      </div>
-    </>}
+            <div className="modal-actions">
+              <button className="modal-cancel" onClick={() => setShowSettings(false)}>ביטול</button>
+              <button className="modal-save" onClick={saveApiKey}>שמור</button>
+            </div>
+            {apiKey && (
+              <button className="modal-clear" onClick={() => { store.set("anthropic-api-key",""); setApiKey(""); setApiKeyInput(""); setShowSettings(false); }}>
+                מחק מפתח
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
-    {tab==='add'&&<>
-      <div style={C.card}>
-        <input style={{background:'#191512',border:'1px solid #322820',color:'#F3EDE4',fontFamily:'Heebo',fontSize:15,outline:'none',width:'100%',padding:'11px 12px',borderRadius:11,marginBottom:13,textAlign:'right'}} placeholder="שם המוצר" value={pname} onChange={e=>setPname(e.target.value)}/>
-        <div style={C.lp}>
-          <div style={{fontFamily:'Rubik',fontWeight:700,fontSize:12,color:'#E2473D',marginBottom:11,textAlign:'center'}}>סימון תזונתי ל-100 גרם</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-            {FIELDS.map(f=><div key={f.key} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6,background:'#211A16',border:'1px solid #322820',borderRadius:10,padding:'7px 9px'}}>
-              <label style={{fontSize:12.5,color:'#CDBFB1',fontWeight:500,whiteSpace:'nowrap'}}>{f.label}</label>
-              <div style={{display:'flex',alignItems:'center',gap:4}}>
-                <input style={{width:56,background:'#14100D',border:'1px solid #3A2E26',color:'#F3EDE4',fontFamily:'Rubik',fontWeight:600,fontSize:15,textAlign:'center',borderRadius:7,padding:'8px 3px',outline:'none'}} inputMode="decimal" value={per100[f.key]} placeholder="0" onChange={e=>sf(f.key)(e.target.value)}/>
-                <span style={{fontSize:11,color:'#7E7367',minWidth:22}}>{f.unit}</span>
+      <div className="wrap">
+        <div className="header">
+          <div className="brand">מחשבון <b>חלבון</b> וקלוריות</div>
+          <button className="settings-btn" onClick={() => { setApiKeyInput(apiKey); setShowSettings(true); }} title="הגדרות">⚙</button>
+        </div>
+        <div className="sub">צלם תווית · שמור מאכלים קבועים · עקוב אחרי החלבון היומי</div>
+
+        {/* ===== TODAY ===== */}
+        {tab === "today" && (
+          <>
+            <div className="totalbar">
+              <div className="tot-row">
+                <div className="tot-p">{fmt(dayTotals.protein, 1)}<small> ג׳ חלבון</small></div>
+                <div className="tot-c">{fmt(dayTotals.calories, 0)} <small>קל׳</small></div>
               </div>
-            </div>)}
+              <div className="goalrow">
+                יעד חלבון:
+                <input inputMode="numeric" value={goal} onChange={(e) => { setGoal(e.target.value); store.set("protein-goal", e.target.value); }} />
+                ג׳ · {fmt(goalPct, 0)}%
+              </div>
+              <div className="bar"><div className="bar-fill" style={{ width: goalPct + "%" }}></div></div>
+            </div>
+
+            {saved.length > 0 && (
+              <div className="card">
+                <div className="eyebrow"><span className="dot"></span>הוספה מהירה</div>
+                <div className="qa-wrap">
+                  {saved.map((f) => (
+                    <div key={f.id} className={"qa" + (flash === f.id ? " flash" : "")} onClick={() => quickAddSaved(f)}>
+                      <div className="qn">{f.name}</div>
+                      <div className="qm">{fmt(f.serving, 0)} ג׳ · <b>{fmt(num(f.per100.protein) * f.serving / 100, 1)} ג׳ חלבון</b></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="card">
+              <div className="eyebrow"><span className="dot"></span>היום · {todayKey}</div>
+              {today.length === 0 ? (
+                <div className="empty">עוד לא הוספת מנות היום.<br />עבור ל"הוספה" כדי לצלם תווית, או הקש על מאכל שמור למעלה.</div>
+              ) : (
+                <>
+                  {today.map((i) => (
+                    <div className="item" key={i.id}>
+                      <div>
+                        <div className="nm">{i.name}</div>
+                        <div className="meta">{fmt(i.grams, 0)} ג׳ · <b>{fmt(i.protein, 1)} ג׳ חלבון</b> · {fmt(i.calories, 0)} קל׳</div>
+                      </div>
+                      <button className="x" onClick={() => removeItem(i.id)} aria-label="הסר">×</button>
+                    </div>
+                  ))}
+                  <div style={{ textAlign: "center", marginTop: 4 }}>
+                    <button className="clear" onClick={clearDay}>נקה את היום</button>
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ===== ADD ===== */}
+        {tab === "add" && (
+          <>
+            <div className="card">
+              <div className="eyebrow"><span className="dot"></span>מקור הנתונים</div>
+              {loading ? (
+                <div className="loading"><span className="spin"></span>קורא את התווית…</div>
+              ) : apiKey ? (
+                <>
+                  <button className="upload" onClick={() => fileRef.current && fileRef.current.click()}>📷 צלם או העלה תווית</button>
+                  <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} style={{ display: "none" }} />
+                  <div className="hint">צלם מקרוב ובחדות את טבלת "ל-100 גרם", או מלא ידנית למטה</div>
+                </>
+              ) : (
+                <div className="no-key">
+                  כדי לצלם תוויות ולמלא ערכים אוטומטית, צריך מפתח API.<br />
+                  <button onClick={() => { setApiKeyInput(""); setShowSettings(true); }}>הוסף מפתח API ←</button>
+                </div>
+              )}
+              {err && (
+                <div className="err">
+                  {err}
+                  {errDetail && <div className="errd">פרטים: {errDetail}</div>}
+                </div>
+              )}
+            </div>
+
+            <div className="card">
+              <input className="pname" placeholder="שם המוצר (לדוגמה: קבב רומני)" value={productName} onChange={(e) => setProductName(e.target.value)} />
+              <div className="label-panel">
+                <div className="label-cap">סימון תזונתי ל-100 גרם</div>
+                <div className="grid2">
+                  {FIELDS.map((f) => (
+                    <div className="frow" key={f.key}>
+                      <label>{f.label}</label>
+                      <div className="inp">
+                        <input inputMode="decimal" value={per100[f.key]} placeholder="0" onChange={(e) => setField(f.key, e.target.value)} />
+                        <span className="u">{f.unit}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="eyebrow" style={{ marginTop: 17 }}><span className="dot"></span>כמה אתה אוכל</div>
+              <div className="qrow">
+                <button className={"chip" + (grams === "100" ? " on" : "")} onClick={() => setGrams("100")}>100 ג׳</button>
+                <button className={"chip" + (grams === "150" ? " on" : "")} onClick={() => setGrams("150")}>150 ג׳</button>
+                <button className={"chip" + (grams === "200" ? " on" : "")} onClick={() => setGrams("200")}>200 ג׳</button>
+                {netWeight && (
+                  <button className={"chip" + (grams === String(netWeight) ? " on" : "")} onClick={() => setGrams(String(netWeight))}>חבילה ({netWeight} ג׳)</button>
+                )}
+              </div>
+              <div className="gramwrap">
+                <input inputMode="decimal" placeholder="0" value={grams} onChange={(e) => setGrams(e.target.value)} />
+                <span>גרם</span>
+              </div>
+            </div>
+
+            {hasData && (
+              <div className="card">
+                <div className="eyebrow"><span className="dot"></span>הסה״כ ל-{fmt(grams, 0)} ג׳</div>
+                <div className="hero">
+                  <div className="hero-box hero-protein">
+                    <div className="hero-lbl">חלבון</div>
+                    <div className="hero-val">{fmt(result.protein, 1)}<small>ג׳</small></div>
+                  </div>
+                  <div className="hero-box hero-cal">
+                    <div className="hero-lbl">קלוריות</div>
+                    <div className="hero-val">{fmt(result.calories, 0)}</div>
+                  </div>
+                </div>
+                <div className="mini-grid">
+                  <div className="mini"><div className="v">{fmt(result.fat, 1)}</div><div className="l">שומן ג׳</div></div>
+                  <div className="mini"><div className="v">{fmt(result.carbs, 1)}</div><div className="l">פחמ׳ ג׳</div></div>
+                  <div className="mini"><div className="v">{fmt(result.fiber, 1)}</div><div className="l">סיבים ג׳</div></div>
+                  <div className="mini"><div className="v">{fmt(result.sugar, 1)}</div><div className="l">סוכר ג׳</div></div>
+                  <div className="mini"><div className="v">{fmt(result.sodium, 0)}</div><div className="l">נתרן מ״ג</div></div>
+                  <div className="mini"><div className="v">{fmt(result.cholesterol, 0)}</div><div className="l">כולס׳ מ״ג</div></div>
+                </div>
+                <div className="actions">
+                  <button className="btn btn-add" onClick={addToToday}>＋ הוסף ליום</button>
+                  <button className="btn btn-save" onClick={saveFood}>★ שמור כמאכל</button>
+                </div>
+                {saveErr && <div className="err">{saveErr}</div>}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ===== SAVED FOODS ===== */}
+        {tab === "foods" && (
+          <div className="card">
+            <div className="eyebrow"><span className="dot"></span>המאכלים שלי</div>
+            {saved.length === 0 ? (
+              <div className="empty">אין עדיין מאכלים שמורים.<br />ב"הוספה", אחרי שתזין ערכים, הקש על "★ שמור כמאכל" כדי שיופיע כאן לשימוש חוזר.</div>
+            ) : (
+              saved.map((f) => (
+                <div className="sf" key={f.id}>
+                  <div className="sf-top">
+                    <div>
+                      <div className="sf-nm">{f.name}</div>
+                      <div className="sf-meta">מנה: {fmt(f.serving, 0)} ג׳ · <b>{fmt(num(f.per100.protein) * f.serving / 100, 1)} ג׳ חלבון</b> · {fmt(num(f.per100.calories) * f.serving / 100, 0)} קל׳</div>
+                    </div>
+                  </div>
+                  <div className="sf-act">
+                    <button className="sf-btn sf-add" onClick={() => { quickAddSaved(f); setTab("today"); }}>＋ ליום</button>
+                    <button className="sf-btn sf-edit" onClick={() => loadSavedToEditor(f)}>ערוך כמות</button>
+                    <button className="sf-btn sf-del" onClick={() => deleteSaved(f.id)} aria-label="מחק">🗑</button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        </div>
-        <div style={{...C.ey,marginTop:17}}><span style={C.dot}></span>כמה אתה אוכל</div>
-        <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
-          {['100','150','200'].map(q=><button key={q} style={{background:grams===q?'#F0B73E':'#241D19',border:`1px solid ${grams===q?'#F0B73E':'#3A2E26'}`,color:grams===q?'#14100D':'#E8DCCD',fontFamily:'Heebo',fontWeight:grams===q?700:500,fontSize:13.5,padding:'11px 14px',borderRadius:11,cursor:'pointer',minHeight:42}} onClick={()=>setGrams(q)}>{q} ג׳</button>)}
-          {nw&&<button style={{background:grams===String(nw)?'#F0B73E':'#241D19',border:`1px solid ${grams===String(nw)?'#F0B73E':'#3A2E26'}`,color:grams===String(nw)?'#14100D':'#E8DCCD',fontFamily:'Heebo',fontWeight:500,fontSize:13.5,padding:'11px 14px',borderRadius:11,cursor:'pointer',minHeight:42}} onClick={()=>setGrams(String(nw))}>חבילה ({nw} ג׳)</button>}
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:10,marginTop:11,background:'#211A16',border:'1px solid #322820',borderRadius:11,padding:'11px 14px'}}>
-          <input style={{flex:1,background:'none',border:'none',color:'#F3EDE4',fontFamily:'Rubik',fontWeight:700,fontSize:23,outline:'none',width:'100%'}} inputMode="decimal" placeholder="0" value={grams} onChange={e=>setGrams(e.target.value)}/>
-          <span style={{color:'#A89A8C',fontSize:14,fontWeight:500}}>גרם</span>
-        </div>
+        )}
       </div>
 
-      {hasData&&<div style={C.card}>
-        <div style={C.ey}><span style={C.dot}></span>הסה״כ ל-{fmt(grams,0)} ג׳</div>
-        <div style={{display:'flex',gap:11,marginBottom:11}}>
-          <div style={{flex:1,borderRadius:15,padding:'15px 14px',background:'linear-gradient(150deg,#2A2110,#211A12)',border:'1px solid #4A3A18'}}>
-            <div style={{fontSize:12,fontWeight:600,color:'#F0B73E',marginBottom:5}}>חלבון</div>
-            <div style={{fontFamily:'Rubik',fontWeight:800,fontSize:36,color:'#F0B73E',lineHeight:1,letterSpacing:-1}}>{fmt(res.protein,1)}<small style={{fontSize:14,fontWeight:600,marginRight:3}}>ג׳</small></div>
-          </div>
-          <div style={{flex:1,borderRadius:15,padding:'15px 14px',background:'#211613',border:'1px solid #4A2722'}}>
-            <div style={{fontSize:12,fontWeight:600,color:'#E27C72',marginBottom:5}}>קלוריות</div>
-            <div style={{fontFamily:'Rubik',fontWeight:800,fontSize:36,color:'#F3EDE4',lineHeight:1,letterSpacing:-1}}>{fmt(res.calories,0)}</div>
-          </div>
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
-          {[{v:res.fat,l:"שומן ג'"},{v:res.carbs,l:"פחמ' ג'"},{v:res.fiber,l:"סיבים ג'"},{v:res.sugar,l:"סוכר ג'"},{v:res.sodium,l:'נתרן מ"ג',d:0},{v:res.cholesterol,l:'כולס׳ מ"ג',d:0}].map((m,i)=><div key={i} style={{background:'#211A16',border:'1px solid #2E251F',borderRadius:11,padding:'10px 6px',textAlign:'center'}}>
-            <div style={{fontFamily:'Rubik',fontWeight:700,fontSize:16}}>{fmt(m.v,m.d!==undefined?m.d:1)}</div>
-            <div style={{fontSize:10.5,color:'#9A8D7F',marginTop:3}}>{m.l}</div>
-          </div>)}
-        </div>
-        <div style={{display:'flex',gap:9,marginTop:13}}>
-          <button style={{flex:1,border:'none',fontFamily:'Rubik',fontWeight:700,fontSize:15,padding:14,borderRadius:12,cursor:'pointer',minHeight:50,background:'#23351F',borderWidth:1,borderStyle:'solid',borderColor:'#3C5733',color:'#A7E08A'}} onClick={addDay}>＋ הוסף ליום</button>
-          <button style={{flex:1,border:'none',fontFamily:'Rubik',fontWeight:700,fontSize:15,padding:14,borderRadius:12,cursor:'pointer',minHeight:50,background:'#211A16',borderWidth:1,borderStyle:'solid',borderColor:'#3A2E26',color:'#E8DCCD'}} onClick={saveFd}>★ שמור כמאכל</button>
-        </div>
-        {saveErr&&<div style={{background:'#2A1715',border:'1px solid #5A2620',color:'#F0B6AE',fontSize:13,padding:'11px 13px',borderRadius:11,marginTop:12}}>{saveErr}</div>}
-      </div>}
-    </>}
-
-    {tab==='foods'&&<div style={C.card}>
-      <div style={C.ey}><span style={C.dot}></span>המאכלים שלי</div>
-      {saved.length===0?<div style={{textAlign:'center',color:'#7E7367',fontSize:13,padding:'18px 8px',lineHeight:1.6}}>אין עדיין מאכלים שמורים.<br/>ב״הוספה״ לחץ ★ שמור כמאכל.</div>:saved.map(f=><div key={f.id} style={{background:'#211A16',border:'1px solid #2E251F',borderRadius:13,padding:13,marginBottom:9}}>
-        <div style={{marginBottom:10}}>
-          <div style={{fontSize:15.5,fontWeight:700}}>{f.name}</div>
-          <div style={{fontSize:12,color:'#8E8175',marginTop:3}}>{fmt(f.serving,0)} ג׳ · <b style={{color:'#F0B73E'}}>{fmt(num(f.per100.protein)*f.serving/100,1)} ג׳ חלבון</b> · {fmt(num(f.per100.calories)*f.serving/100,0)} קל׳</div>
-        </div>
-        <div style={{display:'flex',gap:8}}>
-          <button style={{flex:1,border:'none',fontFamily:'Heebo',fontWeight:600,fontSize:13,padding:10,borderRadius:10,cursor:'pointer',minHeight:42,background:'#23351F',borderWidth:1,borderStyle:'solid',borderColor:'#3C5733',color:'#A7E08A'}} onClick={()=>{qAdd(f);setTab('today');}}>＋ ליום</button>
-          <button style={{flex:1,border:'none',fontFamily:'Heebo',fontWeight:600,fontSize:13,padding:10,borderRadius:10,cursor:'pointer',minHeight:42,background:'#211A16',borderWidth:1,borderStyle:'solid',borderColor:'#3A2E26',color:'#CDBFB1'}} onClick={()=>loadEd(f)}>ערוך כמות</button>
-          <button style={{flex:'0 0 46px',border:'none',fontFamily:'Heebo',fontWeight:600,fontSize:13,padding:10,borderRadius:10,cursor:'pointer',minHeight:42,background:'#241715',borderWidth:1,borderStyle:'solid',borderColor:'#4A2620',color:'#E29089'}} onClick={()=>delSaved(f.id)}>🗑</button>
-        </div>
-      </div>)}
-    </div>}
-  </div>
-
-  <div style={C.nav}>
-    {[{id:'today',ic:'📊',lbl:'היום',b:today.length},{id:'add',ic:'＋',lbl:'הוספה',b:0},{id:'foods',ic:'★',lbl:'מאכלים',b:saved.length}].map(t=><button key={t.id} style={{flex:1,background:'none',border:'none',color:tab===t.id?'#F0B73E':'#8E8175',display:'flex',flexDirection:'column',alignItems:'center',gap:3,fontFamily:'Heebo',fontSize:11,fontWeight:600,padding:'8px 0',cursor:'pointer',borderRadius:10,minHeight:50}} onClick={()=>setTab(t.id)}>
-      <span style={{fontSize:21,lineHeight:1}}>{t.ic}</span>
-      <span>{t.lbl}{t.b>0&&<span style={{background:'#F0B73E',color:'#14100D',fontFamily:'Rubik',fontWeight:700,fontSize:10,borderRadius:9,padding:'1px 6px',marginRight:4}}>{t.b}</span>}</span>
-    </button>)}
-  </div>
-  </div>
+      <div className="tabbar">
+        <button className={"tabbtn" + (tab === "today" ? " on" : "")} onClick={() => setTab("today")}>
+          <span className="ic">📊</span>היום{today.length > 0 && <span className="badge">{today.length}</span>}
+        </button>
+        <button className={"tabbtn" + (tab === "add" ? " on" : "")} onClick={() => setTab("add")}>
+          <span className="ic">＋</span>הוספה
+        </button>
+        <button className={"tabbtn" + (tab === "foods" ? " on" : "")} onClick={() => setTab("foods")}>
+          <span className="ic">★</span>מאכלים{saved.length > 0 && <span className="badge">{saved.length}</span>}
+        </button>
+      </div>
+    </div>
   );
 }
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+ReactDOM.createRoot(document.getElementById('root')).render(<MacroCalculator />);
 </script>
 <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});</script>
 </body>
