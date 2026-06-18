@@ -92,6 +92,38 @@ const SEED_FOODS = [{
     sodium: "350",
     cholesterol: "27"
   }
+}, {
+  id: "seed-tuna-oil",
+  seed: true,
+  name: "טונה בשמן צמחי",
+  serving: 160,
+  per100: {
+    calories: "147",
+    protein: "23",
+    fat: "4.7",
+    saturatedFat: "0.8",
+    carbs: "0",
+    sugar: "0",
+    fiber: "",
+    sodium: "36",
+    cholesterol: ""
+  }
+}, {
+  id: "seed-go-yoplait",
+  seed: true,
+  name: "גו! יוגורט Yoplait",
+  serving: 182,
+  per100: {
+    calories: "60",
+    protein: "10",
+    fat: "0",
+    saturatedFat: "0",
+    carbs: "3.6",
+    sugar: "3.2",
+    fiber: "0.75",
+    sodium: "106",
+    cholesterol: ""
+  }
 }];
 const num = v => {
   const n = parseFloat(v);
@@ -880,7 +912,11 @@ function MacroCalculator() {
     className: "eyebrow"
   }, /*#__PURE__*/React.createElement("span", {
     className: "dot"
-  }), "\u05D4\u05DE\u05D0\u05DB\u05DC\u05D9\u05DD \u05E9\u05DC\u05D9"), saved.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }), "\u05D4\u05DE\u05D0\u05DB\u05DC\u05D9\u05DD \u05E9\u05DC\u05D9"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn-save",
+    style: {width: "100%", marginBottom: "12px"},
+    onClick: () => { clearForm(); setTab("add"); }
+  }, "\uFF0B \u05D4\u05D5\u05E1\u05E3 \u05DE\u05D0\u05DB\u05DC \u05D9\u05D3\u05E0\u05D9\u05EA"), saved.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "empty"
   }, "\u05D0\u05D9\u05DF \u05E2\u05D3\u05D9\u05D9\u05DF \u05DE\u05D0\u05DB\u05DC\u05D9\u05DD \u05E9\u05DE\u05D5\u05E8\u05D9\u05DD.", /*#__PURE__*/React.createElement("br", null), "\u05D1\"\u05D4\u05D5\u05E1\u05E4\u05D4\", \u05D0\u05D7\u05E8\u05D9 \u05E9\u05EA\u05D6\u05D9\u05DF \u05E2\u05E8\u05DB\u05D9\u05DD, \u05D4\u05E7\u05E9 \u05E2\u05DC \"\u2605 \u05E9\u05DE\u05D5\u05E8 \u05DB\u05DE\u05D0\u05DB\u05DC\" \u05DB\u05D3\u05D9 \u05E9\u05D9\u05D5\u05E4\u05D9\u05E2 \u05DB\u05D0\u05DF \u05DC\u05E9\u05D9\u05DE\u05D5\u05E9 \u05D7\u05D5\u05D6\u05E8.") : saved.map(f => /*#__PURE__*/React.createElement("div", {
     className: "sf",
