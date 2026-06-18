@@ -1,6 +1,6 @@
 {
-  "name": "מחשבון חלבון וקלוריות",
-  "short_name": "חלבון",
+  "name": "מחשבון קלוריות וחלבון",
+  "short_name": "מחשבון קלוריות וחלבון",
   "start_url": "/macro-calculator/",
   "scope": "/macro-calculator/",
   "display": "standalone",
